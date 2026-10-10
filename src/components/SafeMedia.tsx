@@ -1,33 +1,9 @@
 import { useState } from "react";
 import { resolveAsset } from "../lib/h5pParser";
 import { externalUrl } from "../lib/security";
+import { extractYouTubeId } from "../lib/youtube";
 import { ExternalLink, Video } from "lucide-react";
-
-export function extractYouTubeId(url: unknown): string | null {
-  if (!url || typeof url !== "string") return null;
-  const cleaned = url
-    .replace(/&amp;/g, "&")
-    .trim()
-    .replace(/^['"]|['"]$/g, "");
-  const match = cleaned.match(
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/i,
-  );
-  if (match) return match[1];
-
-  try {
-    const parsed = new URL(
-      cleaned.startsWith("http") ? cleaned : `https://${cleaned}`,
-    );
-    if (parsed.hostname.includes("youtube.com")) {
-      const v = parsed.searchParams.get("v");
-      if (v && /^[\w-]{11}$/.test(v)) return v;
-    }
-  } catch {
-    // ignore
-  }
-
-  return null;
-}
+export { extractYouTubeId } from "../lib/youtube";
 
 export function SafeMedia({
   path,

@@ -1,6 +1,6 @@
-const CACHE_NAME = "h5p-pdf-shell-v3";
+const CACHE_NAME = "h5p-pdf-shell-v4";
 const root = new URL("./", self.location.href);
-const shell = ["index.html", "manifest.webmanifest", "icon.svg"].map(
+const shell = ["index.html", "manifest.webmanifest", "favicon.svg"].map(
   (p) => new URL(p, root).href,
 );
 self.addEventListener("install", (event) =>

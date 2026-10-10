@@ -3,9 +3,300 @@ import { archive, activity } from "../fixtures";
 import { readFile } from "node:fs/promises";
 const upload = async (page: any, buffer: Buffer, name = "sample.h5p") =>
   page
-    .locator("input[type=file]")
-    .first()
+    .locator("#h5p-files")
     .setInputFiles({ name, mimeType: "application/zip", buffer });
+const stubGeminiMediaApi = (page: any) => {
+  const requests: string[] = [];
+  page.route(
+    "https://generativelanguage.googleapis.com/**",
+    async (route: any) => {
+      const request = route.request();
+      const url = request.url();
+      requests.push(`${request.method()} ${url}`);
+
+      if (url.endsWith("/upload/v1beta/files")) {
+        await route.fulfill({
+          status: 200,
+          headers: {
+            "access-control-expose-headers": "x-goog-upload-url",
+            "x-goog-upload-url":
+              "https://generativelanguage.googleapis.com/upload/session-1",
+          },
+          body: "{}",
+        });
+      } else if (url.endsWith("/upload/session-1")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            file: {
+              name: "files/lecture-123",
+              uri: "https://generativelanguage.googleapis.com/v1beta/files/lecture-123",
+              mimeType: "video/mp4",
+              state: "ACTIVE",
+            },
+          }),
+        });
+      } else if (url.endsWith("/files/lecture-123")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: "{}",
+        });
+      } else if (url.includes(":generateContent")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            candidates: [
+              {
+                finishReason: "STOP",
+                content: {
+                  parts: [
+                    { text: "[00:00] This is the verified lesson transcript." },
+                  ],
+                },
+              },
+            ],
+          }),
+        });
+      } else {
+        await route.fulfill({ status: 404, body: "not found" });
+      }
+    },
+  );
+  return requests;
+};
+test("empty upload view and policy pages share the site frame", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", { name: /Drop a file here/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByLabel("Search YouTube or paste a video URL"),
+  ).toHaveCount(0);
+
+  await page.goto("/privacy");
+  await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /github/i }).first(),
+  ).toHaveAttribute("href", "https://github.com/Soyaaaa081305/H5p-Auto-SS");
+  await expect(
+    page.getByRole("link", { name: "Back to study reviewer" }),
+  ).toBeVisible();
+
+  await page.goto("/terms");
+  await expect(
+    page.getByRole("heading", { name: "Terms of use" }),
+  ).toBeVisible();
+});
+
+test("the old Soya route forwards to the project repository", async ({
+  page,
+}) => {
+  await page.route("https://github.com/Soyaaaa081305/H5p-Auto-SS", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<html><title>Repository</title></html>",
+    }),
+  );
+  await page.goto("/soya");
+  await expect(page).toHaveURL("https://github.com/Soyaaaa081305/H5p-Auto-SS");
+});
+
+test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
+  await page.goto("/");
+  await upload(page, await archive());
+  await page.getByRole("button", { name: "Open Summary & reviewer" }).click();
+  const dock = page.getByRole("complementary", {
+    name: "Study reviewer extension",
+  });
+  const viewportWidth = await page.evaluate(() => window.innerWidth);
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      return bounds ? Math.round(bounds.x + bounds.width) : 0;
+    })
+    .toBe(viewportWidth);
+  const keyInput = page.getByLabel("Gemini API key");
+  await expect(keyInput).toBeVisible();
+  const generateButton = page.getByRole("button", {
+    name: "Generate reviewer",
+  });
+  await expect(generateButton).toBeDisabled();
+
+  await page.route("https://generativelanguage.googleapis.com/**", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ name: "models/gemini-3.8-flash" }),
+    }),
+  );
+  await keyInput.fill("test-key");
+  await page.getByRole("button", { name: "Save key" }).click();
+  await expect(page.getByText("Key saved in this browser.")).toBeVisible();
+  await page.getByRole("button", { name: "Test key" }).click();
+  await expect(
+    page.getByText("Key works with the selected Gemini model."),
+  ).toBeVisible();
+
+  const reviewer = page.locator("#study-reviewer");
+  await reviewer.locator('input[type="checkbox"]').nth(0).check();
+  await reviewer.locator('input[type="checkbox"]').nth(1).check();
+  await expect(generateButton).toBeEnabled();
+});
+
+test("an H5P video can be transcribed from an authorized local copy", async ({
+  page,
+}) => {
+  const requests = stubGeminiMediaApi(page);
+
+  await page.goto("/");
+  await upload(page, await archive());
+  await page.getByRole("button", { name: "Open Summary & reviewer" }).click();
+  await page.getByLabel("Gemini API key").fill("test-key");
+  await page.getByRole("button", { name: "Save key" }).click();
+  const reviewer = page.locator("#study-reviewer");
+  await reviewer.locator('input[type="checkbox"]').nth(0).check();
+  await reviewer.locator('input[type="checkbox"]').nth(1).check();
+
+  const picker = page.waitForEvent("filechooser");
+  await page
+    .getByRole("button", {
+      name: "Choose a local copy to transcribe for video 1",
+    })
+    .click();
+  await (
+    await picker
+  ).setFiles({
+    name: "lecture.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("sample media"),
+  });
+
+  await expect(
+    page.getByRole("heading", { name: "Synthetic Book — video 1 transcript" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("[00:00] This is the verified lesson transcript."),
+  ).toBeVisible();
+  expect(requests.some((request) => request.startsWith("DELETE "))).toBe(true);
+});
+
+test("reviewer dock and upload area stay usable at Android phone width", async ({
+  browser,
+}) => {
+  const page = await browser.newPage({
+    baseURL: "http://127.0.0.1:4173",
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 3,
+    isMobile: true,
+    hasTouch: true,
+  });
+  await page.goto("/");
+
+  const uploadArea = page.getByRole("button", {
+    name: /Drop a file here, or click to browse/,
+  });
+  await expect(uploadArea).toBeVisible();
+  const positions = await page.evaluate(() => {
+    const main = document.querySelector("main")!.getBoundingClientRect();
+    const drop = document
+      .querySelector('[aria-describedby="study-file-types"]')!
+      .getBoundingClientRect();
+    return {
+      mainCenter: main.top + main.height / 2,
+      dropCenter: drop.top + drop.height / 2,
+    };
+  });
+  expect(Math.abs(positions.mainCenter - positions.dropCenter)).toBeLessThan(
+    110,
+  );
+
+  const h5pPicker = page.waitForEvent("filechooser");
+  await uploadArea.tap();
+  await (
+    await h5pPicker
+  ).setFiles({
+    name: "sample.h5p",
+    mimeType: "application/zip",
+    buffer: await archive(),
+  });
+  const openButton = page.getByRole("button", {
+    name: "Open Summary & reviewer",
+  });
+  await expect(openButton).toBeVisible();
+  await openButton.tap();
+  await expect(page.getByLabel("Gemini API key")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Collapse Summary & reviewer" }),
+  ).toHaveAttribute("aria-expanded", "true");
+  const mobileRequests = stubGeminiMediaApi(page);
+  await page.getByLabel("Gemini API key").fill("mobile-test-key");
+  await page.getByRole("button", { name: "Save key" }).tap();
+  const mobileReviewer = page.locator("#study-reviewer");
+  await mobileReviewer.locator('input[type="checkbox"]').nth(0).check();
+  await mobileReviewer.locator('input[type="checkbox"]').nth(1).check();
+  const mediaPicker = page.waitForEvent("filechooser");
+  await page
+    .getByRole("button", {
+      name: "Choose a local copy to transcribe for video 1",
+    })
+    .tap();
+  await (
+    await mediaPicker
+  ).setFiles({
+    name: "mobile-lesson.mp4",
+    mimeType: "video/mp4",
+    buffer: Buffer.from("sample media"),
+  });
+  await expect(
+    page.getByRole("heading", { name: "Synthetic Book — video 1 transcript" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("[00:00] This is the verified lesson transcript."),
+  ).toBeVisible();
+  expect(
+    mobileRequests.some((request: string) => request.startsWith("DELETE ")),
+  ).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+
+  await expect(
+    page.getByRole("button", { name: "Open Summary & reviewer" }),
+  ).toHaveAttribute("aria-expanded", "false");
+
+  await page
+    .getByRole("button", { name: "Remove Synthetic Book", exact: true })
+    .tap();
+  await page
+    .getByRole("button", {
+      name: "Remove Synthetic Book — video 1 transcript",
+      exact: true,
+    })
+    .tap();
+  await page.locator("#h5p-files").setInputFiles({
+    name: "lesson.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("A short lesson for mobile reviewer layout."),
+  });
+  await expect(page.getByRole("heading", { name: "lesson.txt" })).toBeVisible();
+  await page.getByRole("button", { name: "Open Summary & reviewer" }).tap();
+  await expect(page.getByLabel("Gemini API key")).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  await page.close();
+});
+
 test("local answers, external media, clipboard, PDF and responsive design", async ({
   page,
   context,
@@ -28,9 +319,7 @@ test("local answers, external media, clipboard, PDF and responsive design", asyn
   });
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "H5P to PDF Converter" }),
-  ).toBeVisible();
+  await expect(page.getByText("H5P to PDF", { exact: true })).toBeVisible();
   expect(exportRequests).toEqual([]);
   await upload(page, await archive());
   await expect(
@@ -91,18 +380,15 @@ test("keeps successful files and supports all-module answers and removal", async
 }) => {
   await page.goto("/");
   const buffer = await archive();
-  await page
-    .locator("input[type=file]")
-    .first()
-    .setInputFiles([
-      { name: "one.h5p", mimeType: "application/zip", buffer },
-      {
-        name: "bad.h5p",
-        mimeType: "application/zip",
-        buffer: Buffer.from("broken"),
-      },
-      { name: "two.h5p", mimeType: "application/zip", buffer },
-    ]);
+  await page.locator("#h5p-files").setInputFiles([
+    { name: "one.h5p", mimeType: "application/zip", buffer },
+    {
+      name: "bad.h5p",
+      mimeType: "application/zip",
+      buffer: Buffer.from("broken"),
+    },
+    { name: "two.h5p", mimeType: "application/zip", buffer },
+  ]);
   await expect(page.getByRole("alert")).toContainText("1 file(s)");
   await page.getByRole("button", { name: "Answers", exact: true }).click();
   await page.getByLabel("Answer modules").selectOption("all");
@@ -248,7 +534,7 @@ test("service worker excludes imported content and caches only application asset
     ).flat();
     return { names, urls, origin: new URL(location.href).origin };
   });
-  expect(cache.names).toContain("h5p-pdf-shell-v3");
+  expect(cache.names).toContain("h5p-pdf-shell-v4");
   expect(cache.urls.length).toBeGreaterThan(3);
   expect(
     cache.urls.every((url) => {
@@ -258,7 +544,7 @@ test("service worker excludes imported content and caches only application asset
         !parsed.search &&
         !parsed.pathname.toLowerCase().endsWith(".h5p") &&
         (parsed.pathname === "/" ||
-          ["/index.html", "/manifest.webmanifest", "/icon.svg"].includes(
+          ["/index.html", "/manifest.webmanifest", "/favicon.svg"].includes(
             parsed.pathname,
           ) ||
           /^\/assets\/[\w.-]+\.(js|css|woff2?|png|svg)$/.test(parsed.pathname))
@@ -281,9 +567,7 @@ test("service worker excludes imported content and caches only application asset
     await context.setOffline(true);
     await page.reload();
     await expect(
-      page.getByText(
-        "Drop one or more .h5p or .zip files here, or click to browse",
-      ),
+      page.getByText("Drop a file here, or click to browse"),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Answers", exact: true }),
@@ -318,9 +602,9 @@ test("file selection and both help dialogs work from the keyboard", async ({
   await expect(blackboardDialog).toHaveCount(0);
   await expect(blackboardHelp).toBeFocused();
 
-  const fileInput = page.locator('input[type="file"]').first();
+  const uploadButton = page.getByRole("button", { name: /Drop a file here/ });
   await page.keyboard.press("Shift+Tab");
-  await expect(fileInput).toBeFocused();
+  await expect(uploadButton).toBeFocused();
   const fileChooser = page.waitForEvent("filechooser");
   await page.keyboard.press("Enter");
   await (

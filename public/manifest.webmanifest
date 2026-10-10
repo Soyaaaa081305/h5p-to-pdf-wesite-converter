@@ -6,14 +6,14 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#09090b",
-  "background_color": "#09090b",
+  "theme_color": "#fafafa",
+  "background_color": "#fafafa",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "192x192 512x512",
+      "src": "./favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["education", "utilities", "productivity"]

@@ -1,6 +1,35 @@
 import type { H5PPackage } from "../types/h5p";
 import { ElementDispatcher } from "./renderers/ElementDispatcher";
-export function DocumentViewer({ pkg }: { pkg: H5PPackage }) {
+import { StudyReviewerDock } from "./StudyReviewerDock";
+import {
+  extractH5PLearningText,
+  extractH5PYouTubeUrls,
+} from "../lib/studyMaterials";
+import type { GeneratedTranscript } from "../types/study";
+export function DocumentViewer({
+  pkg,
+  onTranscriptReady,
+}: {
+  pkg: H5PPackage;
+  onTranscriptReady?: (transcript: GeneratedTranscript) => void;
+}) {
+  const title = pkg.metadata.title || pkg.fileName;
+  const transcriptText = pkg.report.videoNotes
+    .filter(
+      (note) =>
+        note.kind === "transcript" &&
+        !note.text.startsWith("No packaged transcript"),
+    )
+    .map((note) => `${note.location}\n${note.text}`)
+    .join("\n\n");
+  const sourceText = [
+    extractH5PLearningText(pkg.content, title),
+    transcriptText ? `Packaged video transcripts:\n${transcriptText}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+  const youtubeUrls = extractH5PYouTubeUrls(pkg.content);
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0">
       <ElementDispatcher
@@ -36,6 +65,13 @@ export function DocumentViewer({ pkg }: { pkg: H5PPackage }) {
               />
             </section>
           ))}
+      <StudyReviewerDock
+        title={title}
+        sourceText={sourceText}
+        youtubeUrls={youtubeUrls}
+        onTranscriptReady={onTranscriptReady}
+        sourceDescription="Only extracted lesson text and any video you select are sent to Gemini. The H5P archive and its stored answer key stay in this browser."
+      />
     </div>
   );
 }

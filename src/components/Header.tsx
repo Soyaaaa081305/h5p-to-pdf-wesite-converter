@@ -5,8 +5,12 @@ import { useTheme } from "../lib/theme";
 import { HelpDialog } from "./HelpDialog";
 
 // 1-Click Bookmark: Instantly opens the H5P to PDF Converter from any tab or Blackboard
+const bookmarkTarget =
+  import.meta.env.VITE_APP_BASE_URL || "https://h5p-to-pdf-converter.web.app/";
 export const BOOKMARKLET_CODE =
-  "javascript:(function(){window.open('https://soyaaaa081305.github.io/H5p-Auto-SS/','_blank');})();";
+  "javascript:(function(){var w=window.open(" +
+  JSON.stringify(bookmarkTarget) +
+  ", '_blank');if(w)w.opener=null;})();";
 
 export const Header: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();

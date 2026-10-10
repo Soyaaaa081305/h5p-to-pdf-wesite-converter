@@ -1,12 +1,5 @@
-import React, { useState } from "react";
-import {
-  Loader2,
-  Plus,
-  FileCode2,
-  HelpCircle,
-  X,
-  RefreshCw,
-} from "lucide-react";
+import React, { useRef, useState } from "react";
+import { Loader2, FileCode2, HelpCircle, X, RefreshCw } from "lucide-react";
 import { HelpDialog } from "./HelpDialog";
 
 interface DropZoneProps {
@@ -20,6 +13,7 @@ export const DropZone: React.FC<DropZoneProps> = ({
   isLoading,
   loadingMessage,
 }) => {
+  const fileInput = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
@@ -41,80 +35,63 @@ export const DropZone: React.FC<DropZoneProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = "";
-    if (files.length) void onFilesLoaded(files);
-  };
-
   return (
-    <div className="no-print max-w-2xl mx-auto px-4 py-16 sm:py-20">
-      {/* Title & Microcopy */}
-      <div className="text-center mb-8">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-sans">
-          H5P to PDF Converter
-        </h2>
-        <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 font-normal">
-          View supported content, review stored answers, and export printable
-          study notes.
-        </p>
-      </div>
+    <div className="no-print mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-4 py-8">
+      <input
+        ref={fileInput}
+        id="h5p-files"
+        type="file"
+        multiple
+        accept=".h5p,.zip,.pdf,.html,.htm,.txt,.md,.srt,.vtt"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Choose H5P or study files"
+        onChange={(event) => {
+          const files = Array.from(event.target.files ?? []);
+          event.target.value = "";
+          if (files.length) void onFilesLoaded(files);
+        }}
+      />
 
-      {/* File Drop Zone */}
-      <label
-        htmlFor="h5p-files"
+      <button
+        type="button"
+        disabled={isLoading}
+        onClick={() => fileInput.current?.click()}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative block rounded-2xl border transition-all duration-150 p-12 text-center cursor-pointer focus-within:ring-2 focus-within:ring-indigo-500 focus-within:ring-offset-2 dark:focus-within:ring-offset-zinc-950 ${
+        aria-describedby="study-file-types"
+        className={`relative flex min-h-48 w-full flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-10 text-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 disabled:cursor-wait ${
           isDragging
-            ? "border-zinc-900 dark:border-zinc-100 bg-zinc-100 dark:bg-zinc-800/80 ring-4 ring-zinc-900/5 dark:ring-zinc-100/10"
-            : "border-zinc-300/80 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 hover:border-zinc-400 dark:hover:border-zinc-700 hover:bg-zinc-50/60 dark:hover:bg-zinc-800/40 shadow-xs"
+            ? "border-zinc-900 bg-zinc-100 ring-4 ring-zinc-900/5 dark:border-zinc-100 dark:bg-zinc-800/80 dark:ring-zinc-100/10"
+            : "border-zinc-300/80 bg-white/70 hover:border-zinc-500 hover:bg-white dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-zinc-600 dark:hover:bg-zinc-900"
         }`}
       >
-        <input
-          id="h5p-files"
-          type="file"
-          multiple
-          accept=".h5p,.zip"
-          className="sr-only"
-          aria-label="Choose H5P or ZIP files"
-          aria-describedby="h5p-file-types"
-          onChange={handleFileChange}
-        />
-
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 flex items-center justify-center mb-4 transition-transform">
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin text-zinc-900 dark:text-zinc-100" />
-            ) : (
-              <Plus className="w-5 h-5 text-zinc-800 dark:text-zinc-200" />
-            )}
-          </div>
-
-          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-            {isLoading
-              ? loadingMessage ||
-                "Parsing package structure & extracting slides..."
-              : "Drop one or more .h5p or .zip files here, or click to browse"}
-          </p>
-          <p
-            id="h5p-file-types"
-            className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 font-mono"
-          >
-            Select local course packages to review stored answers and export
-            study notes
-          </p>
-
-          <span
-            aria-hidden="true"
-            className="mt-6 px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white font-medium text-xs shadow-xs transition-colors inline-flex items-center gap-1.5"
-          >
-            <FileCode2 className="w-3.5 h-3.5" />
-            <span>Select File(s)</span>
-          </span>
-        </div>
-      </label>
+        <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200/80 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+          {isLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin text-zinc-900 dark:text-zinc-100" />
+          ) : (
+            <FileCode2 className="h-4 w-4" />
+          )}
+        </span>
+        <span
+          aria-live="polite"
+          className="text-sm font-medium text-zinc-900 dark:text-zinc-100"
+        >
+          {isLoading
+            ? loadingMessage ||
+              "Parsing package structure & extracting slides..."
+            : isDragging
+              ? "Release to add your files"
+              : "Drop a file here, or click to browse"}
+        </span>
+        <span
+          id="study-file-types"
+          className="mt-1 text-xs text-zinc-400 dark:text-zinc-500"
+        >
+          H5P, ZIP, PDF, HTML, TXT, Markdown, SRT, and VTT files are supported
+        </span>
+      </button>
 
       {/* Trigger: Blackboard Download Guide Modal */}
       <div className="mt-4 flex justify-center">

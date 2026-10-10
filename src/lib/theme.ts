@@ -15,8 +15,12 @@ export function useTheme() {
 
   useEffect(() => {
     const root = document.documentElement;
+    const themeColor = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]',
+    );
     if (isDark) {
       root.classList.add("dark");
+      themeColor?.setAttribute("content", "#09090b");
       try {
         localStorage.setItem("h5p_theme", "dark");
       } catch {
@@ -24,6 +28,7 @@ export function useTheme() {
       }
     } else {
       root.classList.remove("dark");
+      themeColor?.setAttribute("content", "#fafafa");
       try {
         localStorage.setItem("h5p_theme", "light");
       } catch {

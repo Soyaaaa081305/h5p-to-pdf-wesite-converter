@@ -14,7 +14,8 @@ it("opens converter website in new tab when executed", () => {
   new Function(js)();
 
   expect(openSpy).toHaveBeenCalledWith(
-    "https://soyaaaa081305.github.io/H5p-Auto-SS/",
+    import.meta.env.VITE_APP_BASE_URL ||
+      "https://h5p-to-pdf-converter.web.app/",
     "_blank",
   );
 
