@@ -277,23 +277,15 @@ export function StudyReviewer({
           else nextTranscriptSource.current = undefined;
         }}
       />
-      <div className="border-b border-zinc-200 bg-zinc-50/70 px-5 py-5 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-7 sm:py-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-              <BookOpenCheck className="h-5 w-5" />
+      <div className="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6 sm:py-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
+              <BookOpenCheck className="h-4 w-4" />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                Study guide
-              </p>
-              <h2 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-                Summary & reviewer
-              </h2>
-              <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                Summary, key terms, and practice questions.
-              </p>
-            </div>
+            <h2 className="text-base font-bold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-lg">
+              Study Reviewer
+            </h2>
           </div>
           {review && (
             <div className="no-print flex flex-wrap items-center gap-2">
@@ -404,54 +396,44 @@ export function StudyReviewer({
               {keyFeedback}
             </p>
           )}
-          <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-            Saved in this browser. Use your own key:{" "}
+          <div className="mt-2 flex items-center justify-between">
             <a
               href="https://aistudio.google.com/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-indigo-700 underline underline-offset-2 hover:text-indigo-600 dark:text-indigo-300"
+              className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 underline underline-offset-2"
             >
-              Get a Gemini API key
+              Get API key from Google AI Studio
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>
-          </p>
-          {apiKey && keyDraft.trim() !== apiKey && (
-            <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-300">
-              Save the changed key before generating a reviewer.
-            </p>
-          )}
+          </div>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end no-print">
-          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            Number of questions
-            <select
-              value={questionCount}
-              onChange={(event) => setQuestionCount(Number(event.target.value))}
-              className="mt-1.5 h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-sm"
-            >
-              {[5, 10, 15].map((count) => (
-                <option key={count} value={count}>
-                  {count} questions
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            Difficulty
-            <select
-              value={difficulty}
-              onChange={(event) =>
-                setDifficulty(event.target.value as typeof difficulty)
-              }
-              className="mt-1.5 h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-sm"
-            >
-              <option value="introductory">Introductory</option>
-              <option value="standard">Standard</option>
-              <option value="challenging">Challenging</option>
-            </select>
-          </label>
+        <div className="mt-4 flex flex-wrap items-center gap-2 no-print">
+          <select
+            value={questionCount}
+            onChange={(event) => setQuestionCount(Number(event.target.value))}
+            className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            aria-label="Number of questions"
+          >
+            {[5, 10, 15].map((count) => (
+              <option key={count} value={count}>
+                {count} questions
+              </option>
+            ))}
+          </select>
+          <select
+            value={difficulty}
+            onChange={(event) =>
+              setDifficulty(event.target.value as typeof difficulty)
+            }
+            className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-xs font-medium text-zinc-700 dark:text-zinc-300"
+            aria-label="Difficulty"
+          >
+            <option value="introductory">Introductory</option>
+            <option value="standard">Standard</option>
+            <option value="challenging">Challenging</option>
+          </select>
           <button
             type="button"
             onClick={generate}
@@ -463,56 +445,56 @@ export function StudyReviewer({
               loading ||
               (!sourceText.trim() && !pdfFile && !selectedYoutubeUrl)
             }
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-45"
+            className="ml-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white shadow-xs hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
             {loading ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" />
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-3.5 w-3.5" />
             )}
             {loading
-              ? "Building reviewer…"
+              ? "Generating…"
               : review
                 ? "Regenerate"
                 : "Generate reviewer"}
           </button>
         </div>
 
-        <label className="no-print mt-3 flex min-h-8 items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-          <input
-            type="checkbox"
-            checked={adultConfirmed}
-            onChange={(event) => setAdultConfirmed(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          <span>I am 18 or older.</span>
-        </label>
-        <label className="no-print mt-1 flex min-h-8 items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
-          <input
-            type="checkbox"
-            checked={consented}
-            onChange={(event) => setConsented(event.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
-          />
-          <span>
-            I have permission to use this source and agree to send selected
-            content to Google Gemini.
-          </span>
-        </label>
+        <div className="mt-3 space-y-1.5 no-print text-xs text-zinc-600 dark:text-zinc-400">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={adultConfirmed}
+              onChange={(event) => setAdultConfirmed(event.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700"
+            />
+            <span>I am 18 or older</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consented}
+              onChange={(event) => setConsented(event.target.checked)}
+              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700"
+            />
+            <span>I agree to send selected content to Google Gemini</span>
+          </label>
+        </div>
+
         {videoSources.length > 0 && (
-          <section className="no-print mt-4">
-            <p className="mb-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-              Include a video
+          <div className="no-print mt-3.5 border-t border-zinc-200/80 pt-3 dark:border-zinc-800/80">
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Include video in review
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 aria-pressed={!selectedYoutubeUrl}
                 onClick={() => setSelectedYoutubeUrl("")}
-                className={`min-h-9 touch-manipulation rounded-lg border px-3 text-xs font-medium ${
+                className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
                   !selectedYoutubeUrl
-                    ? "border-indigo-300 bg-indigo-50 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200"
-                    : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 }`}
               >
                 Text only
@@ -523,10 +505,10 @@ export function StudyReviewer({
                     type="button"
                     aria-pressed={selectedYoutubeUrl === url}
                     onClick={() => setSelectedYoutubeUrl(url)}
-                    className={`min-h-9 touch-manipulation rounded-l-lg border px-3 text-xs font-medium ${
+                    className={`min-h-8 touch-manipulation rounded-l-lg border px-3 text-xs font-medium transition-colors ${
                       selectedYoutubeUrl === url
-                        ? "border-indigo-300 bg-indigo-50 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200"
-                        : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                     }`}
                   >
                     Video {index + 1}
@@ -536,38 +518,34 @@ export function StudyReviewer({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Open video ${index + 1} on YouTube`}
-                    title="Open on YouTube"
-                    className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    title="Watch on YouTube"
+                    className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </div>
               ))}
             </div>
-            {selectedYoutubeUrl && (
-              <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-                The selected public video link goes to Gemini when you generate.
-              </p>
-            )}
-          </section>
+          </div>
         )}
+
         <details
-          className="no-print mt-4 rounded-xl border border-zinc-200 bg-white px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+          className="no-print mt-3 text-xs text-zinc-500"
           open={transcribing || !!transcriptionStatus || !!transcriptionError}
         >
-          <summary className="flex min-h-8 cursor-pointer touch-manipulation list-none items-center gap-2 text-xs font-semibold text-zinc-700 marker:hidden dark:text-zinc-300 [&::-webkit-details-marker]:hidden">
-            <Video className="h-4 w-4 text-zinc-500" />
+          <summary className="flex min-h-7 cursor-pointer touch-manipulation list-none items-center gap-1.5 font-medium hover:text-zinc-800 dark:hover:text-zinc-200 marker:hidden [&::-webkit-details-marker]:hidden">
+            <Video className="h-3.5 w-3.5 text-zinc-400" />
             Transcribe an audio/video file
           </summary>
           <div className="pt-2">
             {videoSources.length > 0 ? (
-              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <ul className="space-y-1.5">
                 {videoSources.map((url, index) => (
                   <li
                     key={url}
-                    className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                    className="flex items-center justify-between gap-3 text-xs"
                   >
-                    <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                    <span className="text-zinc-600 dark:text-zinc-300">
                       Video {index + 1}
                     </span>
                     <button
@@ -586,7 +564,7 @@ export function StudyReviewer({
                         !consented ||
                         transcribing
                       }
-                      className="inline-flex min-h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                      className="inline-flex min-h-8 shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                     >
                       <Upload className="h-3.5 w-3.5" /> Choose file
                     </button>
@@ -604,7 +582,7 @@ export function StudyReviewer({
                   !consented ||
                   transcribing
                 }
-                className="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                className="inline-flex min-h-8 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
               >
                 <Upload className="h-3.5 w-3.5" /> Choose file
               </button>
@@ -612,7 +590,7 @@ export function StudyReviewer({
             {transcriptionStatus && (
               <p
                 role="status"
-                className="mt-3 text-xs text-zinc-600 dark:text-zinc-300"
+                className="mt-2 text-xs text-zinc-600 dark:text-zinc-300"
               >
                 {transcriptionStatus}
               </p>
@@ -620,32 +598,12 @@ export function StudyReviewer({
             {transcriptionError && (
               <p
                 role="alert"
-                className="mt-3 text-xs text-rose-700 dark:text-rose-300"
+                className="mt-2 text-xs text-rose-700 dark:text-rose-300"
               >
                 {transcriptionError}
               </p>
             )}
           </div>
-        </details>
-        <details className="no-print mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-          <summary className="cursor-pointer touch-manipulation py-1 font-medium">
-            Data and key details
-          </summary>
-          <p className="pb-2">
-            Your key stays in this browser and is sent to Google with requests.
-            Unpaid Google services may use submitted content to improve
-            products. Local media files are uploaded for transcription and
-            deletion is requested afterward. Billing and quotas follow your
-            Google project. Do not send sensitive content. See{" "}
-            <a className="underline" href="/privacy">
-              Privacy
-            </a>{" "}
-            and{" "}
-            <a className="underline" href="/terms">
-              Terms
-            </a>
-            .
-          </p>
         </details>
       </div>
 
@@ -732,14 +690,9 @@ export function StudyReviewer({
           )}
 
           <section>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Practice questions
-              </h3>
-              <p className="text-xs text-zinc-500">
-                AI-generated. Check important facts against the source.
-              </p>
-            </div>
+            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+              Practice questions
+            </h3>
             <div className="mt-3 space-y-3">
               {review.questions.map((item, index) => (
                 <article
@@ -785,17 +738,16 @@ export function StudyReviewer({
               ))}
             </div>
           </section>
-          <p className="border-t border-zinc-200 dark:border-zinc-800 pt-4 text-xs leading-5 text-zinc-500">
-            Generated study material can contain mistakes. Use the source
-            content to verify answers before relying on them.
+          <p className="border-t border-zinc-200 dark:border-zinc-800 pt-3 text-[11px] text-zinc-400">
+            AI-generated study aid. Verify important facts with course material.
           </p>
         </div>
       ) : (
-        <div className="px-5 py-8 sm:px-7 text-center">
-          <p className="mx-auto max-w-lg text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+        <div className="px-4 py-7 text-center">
+          <p className="mx-auto max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
             {loading
-              ? "Gemini is reading the selected material and preparing your reviewer."
-              : "Choose a question count, confirm the data-sharing notice, then generate a summary and practice set."}
+              ? "Generating summary & practice questions…"
+              : "Enter your Gemini API key and click Generate reviewer."}
           </p>
         </div>
       )}

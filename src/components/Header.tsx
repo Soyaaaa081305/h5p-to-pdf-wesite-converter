@@ -29,10 +29,25 @@ export const Header: React.FC = () => {
     setShowBookmarkHelp(true);
   };
 
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault();
+      window.history.pushState({}, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+
   return (
     <header className="no-print bg-white dark:bg-zinc-900 border-b border-zinc-200/80 dark:border-zinc-800 sticky top-0 z-30 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-        <Logo size={28} />
+        <a
+          href="/"
+          onClick={handleHomeClick}
+          className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-90 cursor-pointer"
+          title="H5P to PDF Converter"
+        >
+          <Logo size={28} />
+        </a>
 
         <div className="flex items-center gap-3">
           {/* Bookmark Button */}

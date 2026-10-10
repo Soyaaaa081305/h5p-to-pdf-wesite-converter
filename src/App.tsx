@@ -172,7 +172,18 @@ function StudyReviewerApp() {
     setError(null);
   }
 
-  const pathname = window.location.pathname.replace(/\/$/, "");
+  const [pathname, setPathname] = useState(
+    () => window.location.pathname.replace(/\/$/, "") || "/",
+  );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPathname(window.location.pathname.replace(/\/$/, "") || "/");
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   if (pathname === "/soya") {
     window.location.replace(GITHUB_REPOSITORY);
     return null;

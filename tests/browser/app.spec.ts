@@ -158,13 +158,15 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   const dock = page.getByRole("complementary", {
     name: "Study reviewer extension",
   });
-  const viewportWidth = await page.evaluate(() => window.innerWidth);
   await expect
     .poll(async () => {
       const bounds = await dock.boundingBox();
-      return bounds ? Math.round(bounds.x + bounds.width) : 0;
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      return bounds ? Math.round(bounds.x + bounds.width) - clientWidth : -1;
     })
-    .toBe(viewportWidth);
+    .toBe(0);
   const keyInput = page.getByLabel("Gemini API key");
   await expect(keyInput).toBeVisible();
   const generateButton = page.getByRole("button", {

@@ -1,12 +1,22 @@
+import React from "react";
 import { ExternalLink } from "lucide-react";
 import { GITHUB_REPOSITORY } from "../lib/links";
 
 export function SiteFooter() {
+  const handleNav = (e: React.MouseEvent<HTMLAnchorElement>, to: string) => {
+    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault();
+      window.history.pushState({}, "", to);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+
   return (
     <footer className="no-print border-t border-zinc-200 dark:border-zinc-800 px-4 py-4 text-center text-xs text-zinc-500 dark:text-zinc-400">
       <a
         className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-300"
         href="/privacy"
+        onClick={(e) => handleNav(e, "/privacy")}
       >
         Privacy
       </a>
@@ -16,6 +26,7 @@ export function SiteFooter() {
       <a
         className="transition-colors hover:text-indigo-600 dark:hover:text-indigo-300"
         href="/terms"
+        onClick={(e) => handleNav(e, "/terms")}
       >
         Terms
       </a>
