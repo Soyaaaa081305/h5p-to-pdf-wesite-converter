@@ -11,6 +11,7 @@ import { StudyMaterialViewer } from "./components/StudyMaterialViewer";
 import { SourceManager } from "./components/SourceManager";
 import { PolicyPage } from "./components/PolicyPage";
 import { SiteFooter } from "./components/SiteFooter";
+import { PrankLanding } from "./components/PrankLanding";
 import { GITHUB_REPOSITORY } from "./lib/links";
 
 type LoadedSource =
@@ -22,7 +23,7 @@ function disposeSource(source: LoadedSource) {
   else source.material.dispose();
 }
 
-export default function App() {
+function StudyReviewerApp() {
   const [sources, setSources] = useState<LoadedSource[]>([]);
   const [activeId, setActiveId] = useState<string>();
   const [loading, setLoading] = useState("");
@@ -255,4 +256,15 @@ export default function App() {
       <SiteFooter />
     </div>
   );
+}
+
+function isGitHubPagesNotice() {
+  return (
+    import.meta.env.VITE_DEPLOY_TARGET === "github-pages" ||
+    window.location.hostname === "soyaaaa081305.github.io"
+  );
+}
+
+export default function App() {
+  return isGitHubPagesNotice() ? <PrankLanding /> : <StudyReviewerApp />;
 }

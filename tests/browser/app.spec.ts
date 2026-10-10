@@ -1,6 +1,34 @@
 import { test, expect } from "@playwright/test";
 import { archive, activity } from "../fixtures";
 import { readFile } from "node:fs/promises";
+
+test("the GitHub Pages handoff notice links to the Firebase app", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.VITE_DEPLOY_TARGET !== "github-pages",
+    "Runs against the GitHub Pages production build.",
+  );
+  await page.goto("/");
+
+  await expect(page).toHaveTitle("Halaa, nascam ka! — H5P domain update");
+  await expect(
+    page.getByRole("heading", { name: "HALAA, NASCAM KA!" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "halaa nascam ka, de joke lang.. updated the domain, ito na gamitin niyo ->",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Open the updated app" }),
+  ).toHaveAttribute("href", "https://h5p-to-pdf-converter.web.app");
+  await expect(
+    page.getByRole("img", { name: "Nick Wilde gives a knowing look" }),
+  ).toBeVisible();
+});
+
 const upload = async (page: any, buffer: Buffer, name = "sample.h5p") =>
   page
     .locator("#h5p-files")

@@ -1,5 +1,7 @@
 # H5P Study Reviewer
 
+> The GitHub Pages address at [soyaaaa081305.github.io/h5p-to-pdf-wesite-converter](https://soyaaaa081305.github.io/h5p-to-pdf-wesite-converter/) intentionally shows a playful domain handoff with the Nick Wilde GIF. The working study app is hosted on Firebase below.
+
 A browser-based study workspace for H5P courses, PDFs, HTML pages, text files, captions, and YouTube videos. Preview course material locally, then ask Gemini to create a source-based summary, key terms, and practice questions.
 
 **Live app:** [https://h5p-to-pdf-converter.web.app](https://h5p-to-pdf-converter.web.app)
@@ -30,7 +32,7 @@ The Gemini API terms require adult access and forbid API clients directed to or 
 
 The app does not include an account system or public admin console. Firebase Hosting serves the site; Gemini usage and limits belong to each user's Google project and key.
 
-YouTube previews use YouTube's embedded player. This app does not download audio from YouTube; transcribe only a local audio/video file you own or are allowed to share with Google.
+YouTube previews use YouTube's embedded player. This app does not download audio from YouTube or provide automated transcription of arbitrary public links. To transcribe an embedded video, choose a local audio/video file you own or are allowed to share with Google; the file goes to Gemini using your own key.
 
 ## Configure the app
 
