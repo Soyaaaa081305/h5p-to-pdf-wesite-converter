@@ -1,6 +1,4 @@
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Header } from "./Header";
-import { SiteFooter } from "./SiteFooter";
 
 type Page = "terms" | "privacy";
 
@@ -72,78 +70,74 @@ export function PolicyPage({ page }: { page: Page }) {
   const content = pageContent[page];
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 transition-colors dark:bg-zinc-950 dark:text-zinc-100">
-      <Header />
-      <main className="w-full flex-1 px-4 py-8 sm:px-6 sm:py-10">
-        <article className="mx-auto w-full max-w-3xl">
-          <a
-            href="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Back to study reviewer
-          </a>
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+      <article>
+        <a
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+          Back to study reviewer
+        </a>
 
-          <header className="mt-7 border-b border-zinc-200 pb-7 dark:border-zinc-800">
-            <h1 className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-white sm:text-3xl">
-              {content.title}
-            </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 sm:text-base sm:leading-7">
-              {content.intro}
-            </p>
-          </header>
+        <header className="mt-7 border-b border-zinc-200 pb-7 dark:border-zinc-800">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 dark:text-white sm:text-3xl">
+            {content.title}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300 sm:text-base sm:leading-7">
+            {content.intro}
+          </p>
+        </header>
 
-          <div>
-            {content.sections.map((section) => (
-              <section
-                key={section.title}
-                className="border-b border-zinc-200 py-5 last:border-b-0 dark:border-zinc-800 sm:py-6"
-              >
-                <h2 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-base">
-                  {section.title}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300 sm:leading-7">
-                  {section.body}
-                </p>
-              </section>
-            ))}
-          </div>
+        <div>
+          {content.sections.map((section) => (
+            <section
+              key={section.title}
+              className="border-b border-zinc-200 py-5 last:border-b-0 dark:border-zinc-800 sm:py-6"
+            >
+              <h2 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-base">
+                {section.title}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300 sm:leading-7">
+                {section.body}
+              </p>
+            </section>
+          ))}
+        </div>
 
-          <footer className="border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:pt-6">
-            <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-              Google service details:{" "}
-              <a
-                className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
-                href="https://ai.google.dev/gemini-api/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Gemini API terms
-              </a>
-              ,{" "}
-              <a
-                className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
-                href="https://ai.google.dev/gemini-api/docs/api-key"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                API key security guidance
-              </a>
-              , and{" "}
-              <a
-                className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
-                href="https://policies.google.com/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Google privacy information
-              </a>{" "}
-              <ExternalLink className="inline h-3 w-3" aria-hidden="true" />
-            </p>
-          </footer>
-        </article>
-      </main>
-      <SiteFooter />
-    </div>
+        <footer className="border-t border-zinc-200 pt-5 dark:border-zinc-800 sm:pt-6">
+          <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+            Google service details:{" "}
+            <a
+              className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
+              href="https://ai.google.dev/gemini-api/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Gemini API terms
+            </a>
+            ,{" "}
+            <a
+              className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
+              href="https://ai.google.dev/gemini-api/docs/api-key"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              API key security guidance
+            </a>
+            , and{" "}
+            <a
+              className="font-medium text-zinc-700 underline decoration-zinc-300 underline-offset-2 transition-colors hover:text-indigo-700 dark:text-zinc-300 dark:decoration-zinc-600 dark:hover:text-indigo-300"
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Google privacy information
+            </a>{" "}
+            <ExternalLink className="inline h-3 w-3" aria-hidden="true" />
+          </p>
+        </footer>
+      </article>
+    </main>
   );
 }

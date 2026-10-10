@@ -177,82 +177,88 @@ function StudyReviewerApp() {
     window.location.replace(GITHUB_REPOSITORY);
     return null;
   }
-  if (pathname === "/terms" || pathname === "/privacy") {
-    return <PolicyPage page={pathname.slice(1) as "terms" | "privacy"} />;
-  }
+  const policyPage =
+    pathname === "/terms" || pathname === "/privacy"
+      ? (pathname.slice(1) as "terms" | "privacy")
+      : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       <Header />
-      <main className="flex flex-1 flex-col">
-        {loading && (
-          <div role="status" className="p-3 text-center text-sm">
-            {loading}{" "}
-            <button
-              className="underline ml-3"
-              onClick={() => controller.current?.abort()}
+      {policyPage ? (
+        <PolicyPage page={policyPage} />
+      ) : (
+        <main className="flex flex-1 flex-col">
+          {loading && (
+            <div role="status" className="p-3 text-center text-sm">
+              {loading}{" "}
+              <button
+                className="underline ml-3"
+                onClick={() => controller.current?.abort()}
+              >
+                Cancel import
+              </button>
+            </div>
+          )}
+          {error && (
+            <p
+              role="alert"
+              className="p-3 text-center text-sm text-amber-700 dark:text-amber-400"
             >
-              Cancel import
-            </button>
-          </div>
-        )}
-        {error && (
-          <p
-            role="alert"
-            className="p-3 text-center text-sm text-amber-700 dark:text-amber-400"
-          >
-            {error}
-          </p>
-        )}
-        <SourceManager
-          sources={sources.map((source) => ({
-            id: source.id,
-            title: source.title,
-            kind: source.type === "h5p" ? "H5P" : source.material.kind,
-          }))}
-          selectedId={selected?.id}
-          onSelect={setActiveId}
-          onRemove={removeSource}
-          onReset={reset}
-        />
-        {selected?.type === "h5p" ? (
-          <>
-            <Toolbar
-              packages={packages}
-              activePkgIndex={packageSources.findIndex(
-                (source) => source.id === selected.id,
-              )}
-              onSelectPackage={(index) =>
-                setActiveId(packageSources[index]?.id)
-              }
-              onRemovePackage={(index) =>
-                packageSources[index] && removeSource(packageSources[index].id)
-              }
-              onAddFiles={importFiles}
-              onResetAll={reset}
-            />
-            <DocumentViewer
+              {error}
+            </p>
+          )}
+          <SourceManager
+            sources={sources.map((source) => ({
+              id: source.id,
+              title: source.title,
+              kind: source.type === "h5p" ? "H5P" : source.material.kind,
+            }))}
+            selectedId={selected?.id}
+            onSelect={setActiveId}
+            onRemove={removeSource}
+            onReset={reset}
+          />
+          {selected?.type === "h5p" ? (
+            <>
+              <Toolbar
+                packages={packages}
+                activePkgIndex={packageSources.findIndex(
+                  (source) => source.id === selected.id,
+                )}
+                onSelectPackage={(index) =>
+                  setActiveId(packageSources[index]?.id)
+                }
+                onRemovePackage={(index) =>
+                  packageSources[index] &&
+                  removeSource(packageSources[index].id)
+                }
+                onAddFiles={importFiles}
+                onResetAll={reset}
+              />
+              <DocumentViewer
+                key={selected.id}
+                pkg={selected.package}
+                onTranscriptReady={addTranscript}
+              />
+            </>
+          ) : selected?.type === "material" ? (
+            <StudyMaterialViewer
               key={selected.id}
-              pkg={selected.package}
+              material={selected.material}
+              onRemove={() => removeSource(selected.id)}
+              onAddFiles={importFiles}
               onTranscriptReady={addTranscript}
             />
-          </>
-        ) : selected?.type === "material" ? (
-          <StudyMaterialViewer
-            key={selected.id}
-            material={selected.material}
-            onRemove={() => removeSource(selected.id)}
-            onAddFiles={importFiles}
-            onTranscriptReady={addTranscript}
-          />
-        ) : (
-          <DropZone
-            onFilesLoaded={importFiles}
-            isLoading={!!loading}
-            loadingMessage={loading}
-          />
-        )}
-      </main>
+          ) : (
+            <DropZone
+              onFilesLoaded={importFiles}
+              isLoading={!!loading}
+              loadingMessage={loading}
+            />
+          )}
+        </main>
+      )}
       <SiteFooter />
     </div>
   );

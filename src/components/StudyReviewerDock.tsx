@@ -9,7 +9,6 @@ interface Props {
   pdfFile?: File;
   youtubeUrl?: string;
   youtubeUrls?: string[];
-  sourceDescription?: string;
   onTranscriptReady?: (transcript: GeneratedTranscript) => void;
 }
 
@@ -19,7 +18,6 @@ export function StudyReviewerDock({
   pdfFile,
   youtubeUrl,
   youtubeUrls,
-  sourceDescription,
   onTranscriptReady,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -95,7 +93,6 @@ export function StudyReviewerDock({
             pdfFile={pdfFile}
             youtubeUrl={youtubeUrl}
             youtubeUrls={youtubeUrls}
-            sourceDescription={sourceDescription}
             onTranscriptReady={onTranscriptReady}
           />
         </div>

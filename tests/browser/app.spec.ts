@@ -102,12 +102,28 @@ test("empty upload view and policy pages share the site frame", async ({
   await expect(
     page.getByRole("button", { name: /Drop a file here/ }),
   ).toBeVisible();
+  const homeHeaderBounds = await page.locator("header > div").boundingBox();
   await expect(
     page.getByLabel("Search YouTube or paste a video URL"),
   ).toHaveCount(0);
 
   await page.goto("/privacy");
   await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const bounds = await page.locator("header > div").boundingBox();
+      return bounds && homeHeaderBounds
+        ? [bounds.x, bounds.y, bounds.width, bounds.height]
+        : null;
+    })
+    .toEqual(
+      homeHeaderBounds && [
+        homeHeaderBounds.x,
+        homeHeaderBounds.y,
+        homeHeaderBounds.width,
+        homeHeaderBounds.height,
+      ],
+    );
   await expect(
     page.getByRole("link", { name: /github/i }).first(),
   ).toHaveAttribute("href", "https://github.com/Soyaaaa081305/H5p-Auto-SS");
@@ -174,6 +190,13 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   const reviewer = page.locator("#study-reviewer");
   await reviewer.locator('input[type="checkbox"]').nth(0).check();
   await reviewer.locator('input[type="checkbox"]').nth(1).check();
+  const videoButton = page.getByRole("button", {
+    name: "Video 1",
+    exact: true,
+  });
+  await expect(videoButton).toHaveAttribute("aria-pressed", "false");
+  await videoButton.click();
+  await expect(videoButton).toHaveAttribute("aria-pressed", "true");
   await expect(generateButton).toBeEnabled();
 });
 
@@ -190,6 +213,7 @@ test("an H5P video can be transcribed from an authorized local copy", async ({
   const reviewer = page.locator("#study-reviewer");
   await reviewer.locator('input[type="checkbox"]').nth(0).check();
   await reviewer.locator('input[type="checkbox"]').nth(1).check();
+  await reviewer.getByText("Transcribe an audio/video file").click();
 
   const picker = page.waitForEvent("filechooser");
   await page
@@ -268,6 +292,7 @@ test("reviewer dock and upload area stay usable at Android phone width", async (
   const mobileReviewer = page.locator("#study-reviewer");
   await mobileReviewer.locator('input[type="checkbox"]').nth(0).check();
   await mobileReviewer.locator('input[type="checkbox"]').nth(1).check();
+  await mobileReviewer.getByText("Transcribe an audio/video file").tap();
   const mediaPicker = page.waitForEvent("filechooser");
   await page
     .getByRole("button", {

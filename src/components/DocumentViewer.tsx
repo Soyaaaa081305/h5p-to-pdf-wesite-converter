@@ -70,7 +70,6 @@ export function DocumentViewer({
         sourceText={sourceText}
         youtubeUrls={youtubeUrls}
         onTranscriptReady={onTranscriptReady}
-        sourceDescription="Only extracted lesson text and any video you select are sent to Gemini. The H5P archive and its stored answer key stay in this browser."
       />
     </div>
   );

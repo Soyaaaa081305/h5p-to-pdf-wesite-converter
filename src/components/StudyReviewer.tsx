@@ -32,7 +32,6 @@ interface Props {
   pdfFile?: File;
   youtubeUrl?: string;
   youtubeUrls?: string[];
-  sourceDescription?: string;
   compact?: boolean;
   onTranscriptReady?: (transcript: GeneratedTranscript) => void;
 }
@@ -92,7 +91,6 @@ export function StudyReviewer({
   pdfFile,
   youtubeUrl,
   youtubeUrls = [],
-  sourceDescription,
   compact = false,
   onTranscriptReady,
 }: Props) {
@@ -124,6 +122,9 @@ export function StudyReviewer({
   const [transcribing, setTranscribing] = useState(false);
   const [transcriptionStatus, setTranscriptionStatus] = useState("");
   const [transcriptionError, setTranscriptionError] = useState("");
+  const videoSources = Array.from(
+    new Set(youtubeUrls.length ? youtubeUrls : youtubeUrl ? [youtubeUrl] : []),
+  );
 
   async function generate() {
     setError("");
@@ -136,7 +137,7 @@ export function StudyReviewer({
         sourceText,
         questionCount,
         difficulty,
-        youtubeUrl: selectedYoutubeUrl || youtubeUrl,
+        youtubeUrl: selectedYoutubeUrl,
         pdfFile,
       });
       setReview(next);
@@ -289,9 +290,8 @@ export function StudyReviewer({
               <h2 className="mt-1 text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
                 Summary & reviewer
               </h2>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                Build a clear summary, key terms, and practice questions from
-                this material.
+              <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                Summary, key terms, and practice questions.
               </p>
             </div>
           </div>
@@ -405,27 +405,17 @@ export function StudyReviewer({
             </p>
           )}
           <p className="mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-            Saved only in this browser and sent directly to Google when you test
-            the key or generate a reviewer. Use a key you own and restrict it to
-            the Gemini API and this site when supported. Anyone with access to
-            this browser profile may be able to use it. You can{" "}
+            Saved in this browser. Use your own key:{" "}
             <a
               href="https://aistudio.google.com/apikey"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 font-semibold text-indigo-700 underline underline-offset-2 hover:text-indigo-600 dark:text-indigo-300"
             >
-              get a key in Google AI Studio
+              Get a Gemini API key
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>
-            . The app cannot prevent charges on a Gemini project with billing
-            enabled.
           </p>
-          {!apiKey && !keyFeedback && (
-            <p className="mt-2 text-[11px] font-medium text-zinc-600 dark:text-zinc-300">
-              Save a key to enable reviewer generation.
-            </p>
-          )}
           {apiKey && keyDraft.trim() !== apiKey && (
             <p className="mt-2 text-[11px] font-medium text-amber-700 dark:text-amber-300">
               Save the changed key before generating a reviewer.
@@ -471,10 +461,7 @@ export function StudyReviewer({
               !adultConfirmed ||
               !consented ||
               loading ||
-              (!sourceText.trim() &&
-                !pdfFile &&
-                !selectedYoutubeUrl &&
-                !youtubeUrl)
+              (!sourceText.trim() && !pdfFile && !selectedYoutubeUrl)
             }
             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-bold text-white shadow-sm hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-45"
           >
@@ -491,19 +478,16 @@ export function StudyReviewer({
           </button>
         </div>
 
-        <label className="no-print mt-3 flex items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+        <label className="no-print mt-3 flex min-h-8 items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
           <input
             type="checkbox"
             checked={adultConfirmed}
             onChange={(event) => setAdultConfirmed(event.target.checked)}
             className="mt-1 h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
           />
-          <span>
-            I confirm that I am 18 or older. Google’s free Gemini API service is
-            not for people under 18.
-          </span>
+          <span>I am 18 or older.</span>
         </label>
-        <label className="no-print mt-2 flex items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
+        <label className="no-print mt-1 flex min-h-8 items-start gap-2.5 text-xs leading-5 text-zinc-600 dark:text-zinc-400">
           <input
             type="checkbox"
             checked={consented}
@@ -511,132 +495,158 @@ export function StudyReviewer({
             className="mt-1 h-4 w-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
           />
           <span>
-            I understand that{" "}
-            {pdfFile
-              ? "this PDF"
-              : selectedYoutubeUrl || youtubeUrl
-                ? "the selected video link and study text"
-                : "the extracted study text"}{" "}
-            is sent to Google Gemini using this key when I generate a reviewer.
-            A local audio or video file I choose to transcribe is also uploaded
-            to Google Gemini Files API; the app requests deletion after
-            transcription, and Google automatically deletes it within 48 hours.
-            If the key uses Google's unpaid service, Google may use submitted
-            content and responses to improve its products, and human reviewers
-            may process them. I will not send personal, confidential, or
-            restricted material, and I am allowed to use and share this source.
+            I have permission to use this source and agree to send selected
+            content to Google Gemini.
           </span>
         </label>
-        {youtubeUrls.length > 0 && (
-          <label className="no-print mt-3 block max-w-xl text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-            Include a course video (optional)
-            <select
-              value={selectedYoutubeUrl}
-              onChange={(event) => setSelectedYoutubeUrl(event.target.value)}
-              className="mt-1.5 h-10 w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-sm font-normal"
-            >
-              <option value="">Use course text only</option>
-              {youtubeUrls.map((url) => (
-                <option key={url} value={url}>
-                  {url}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <section
-          aria-label="Video transcription"
-          className="mt-5 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
-        >
-          <div className="flex items-start gap-2.5">
-            <Video className="mt-0.5 h-4 w-4 shrink-0 text-zinc-500" />
-            <div>
-              <h3 className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                Transcribe a course video
-              </h3>
-              <p className="mt-1 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
-                Choose a local audio or video copy you own or are allowed to
-                send to Google (up to 250 MB). This app does not download
-                YouTube videos.
-              </p>
-            </div>
-          </div>
-          {youtubeUrls.length > 0 ? (
-            <ul className="mt-3 divide-y divide-zinc-100 dark:divide-zinc-800">
-              {youtubeUrls.map((url, index) => (
-                <li
-                  key={url}
-                  className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
-                >
+        {videoSources.length > 0 && (
+          <section className="no-print mt-4">
+            <p className="mb-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+              Include a video
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                aria-pressed={!selectedYoutubeUrl}
+                onClick={() => setSelectedYoutubeUrl("")}
+                className={`min-h-9 touch-manipulation rounded-lg border px-3 text-xs font-medium ${
+                  !selectedYoutubeUrl
+                    ? "border-indigo-300 bg-indigo-50 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200"
+                    : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                }`}
+              >
+                Text only
+              </button>
+              {videoSources.map((url, index) => (
+                <div key={url} className="inline-flex items-center">
+                  <button
+                    type="button"
+                    aria-pressed={selectedYoutubeUrl === url}
+                    onClick={() => setSelectedYoutubeUrl(url)}
+                    className={`min-h-9 touch-manipulation rounded-l-lg border px-3 text-xs font-medium ${
+                      selectedYoutubeUrl === url
+                        ? "border-indigo-300 bg-indigo-50 text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-200"
+                        : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
+                    Video {index + 1}
+                  </button>
                   <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="min-w-0 truncate text-xs font-medium text-indigo-700 underline decoration-indigo-200 underline-offset-2 hover:text-indigo-600 dark:text-indigo-300 dark:decoration-indigo-900"
+                    aria-label={`Open video ${index + 1} on YouTube`}
+                    title="Open on YouTube"
+                    className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                   >
-                    Video {index + 1} · Open on YouTube
+                    <ExternalLink className="h-3.5 w-3.5" />
                   </a>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      chooseMedia({
-                        name: `${title} — video ${index + 1} transcript`,
-                        youtubeUrl: url,
-                      })
-                    }
-                    disabled={
-                      !apiKey ||
-                      keyDraft.trim() !== apiKey ||
-                      !adultConfirmed ||
-                      !consented ||
-                      transcribing
-                    }
-                    className="inline-flex h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                    aria-label={`Choose a local copy to transcribe for video ${index + 1}`}
-                  >
-                    <Upload className="h-3.5 w-3.5" />
-                    Choose file
-                  </button>
-                </li>
+                </div>
               ))}
-            </ul>
-          ) : (
-            <button
-              type="button"
-              onClick={() => chooseMedia()}
-              disabled={
-                !apiKey ||
-                keyDraft.trim() !== apiKey ||
-                !adultConfirmed ||
-                !consented ||
-                transcribing
-              }
-              className="mt-3 inline-flex h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-            >
-              <Upload className="h-3.5 w-3.5" /> Choose audio or video file
-            </button>
-          )}
-          {transcriptionStatus && (
-            <p
-              role="status"
-              className="mt-3 text-xs text-zinc-600 dark:text-zinc-300"
-            >
-              {transcriptionStatus}
-            </p>
-          )}
-          {transcriptionError && (
-            <p
-              role="alert"
-              className="mt-3 text-xs text-rose-700 dark:text-rose-300"
-            >
-              {transcriptionError}
-            </p>
-          )}
-        </section>
-        <p className="no-print mt-2 text-[11px] text-zinc-500 dark:text-zinc-500">
-          {sourceDescription ||
-            "Your imported file stays in this browser. Only the source you choose to review is sent when you generate."}
-        </p>
+            </div>
+            {selectedYoutubeUrl && (
+              <p className="mt-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+                The selected public video link goes to Gemini when you generate.
+              </p>
+            )}
+          </section>
+        )}
+        <details
+          className="no-print mt-4 rounded-xl border border-zinc-200 bg-white px-3.5 py-3 dark:border-zinc-800 dark:bg-zinc-900"
+          open={transcribing || !!transcriptionStatus || !!transcriptionError}
+        >
+          <summary className="flex min-h-8 cursor-pointer touch-manipulation list-none items-center gap-2 text-xs font-semibold text-zinc-700 marker:hidden dark:text-zinc-300 [&::-webkit-details-marker]:hidden">
+            <Video className="h-4 w-4 text-zinc-500" />
+            Transcribe an audio/video file
+          </summary>
+          <div className="pt-2">
+            {videoSources.length > 0 ? (
+              <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {videoSources.map((url, index) => (
+                  <li
+                    key={url}
+                    className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
+                  >
+                    <span className="text-xs text-zinc-600 dark:text-zinc-300">
+                      Video {index + 1}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`Choose a local copy to transcribe for video ${index + 1}`}
+                      onClick={() =>
+                        chooseMedia({
+                          name: `${title} — video ${index + 1} transcript`,
+                          youtubeUrl: url,
+                        })
+                      }
+                      disabled={
+                        !apiKey ||
+                        keyDraft.trim() !== apiKey ||
+                        !adultConfirmed ||
+                        !consented ||
+                        transcribing
+                      }
+                      className="inline-flex min-h-9 shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                    >
+                      <Upload className="h-3.5 w-3.5" /> Choose file
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <button
+                type="button"
+                onClick={() => chooseMedia()}
+                disabled={
+                  !apiKey ||
+                  keyDraft.trim() !== apiKey ||
+                  !adultConfirmed ||
+                  !consented ||
+                  transcribing
+                }
+                className="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                <Upload className="h-3.5 w-3.5" /> Choose file
+              </button>
+            )}
+            {transcriptionStatus && (
+              <p
+                role="status"
+                className="mt-3 text-xs text-zinc-600 dark:text-zinc-300"
+              >
+                {transcriptionStatus}
+              </p>
+            )}
+            {transcriptionError && (
+              <p
+                role="alert"
+                className="mt-3 text-xs text-rose-700 dark:text-rose-300"
+              >
+                {transcriptionError}
+              </p>
+            )}
+          </div>
+        </details>
+        <details className="no-print mt-2 text-[11px] leading-5 text-zinc-500 dark:text-zinc-400">
+          <summary className="cursor-pointer touch-manipulation py-1 font-medium">
+            Data and key details
+          </summary>
+          <p className="pb-2">
+            Your key stays in this browser and is sent to Google with requests.
+            Unpaid Google services may use submitted content to improve
+            products. Local media files are uploaded for transcription and
+            deletion is requested afterward. Billing and quotas follow your
+            Google project. Do not send sensitive content. See{" "}
+            <a className="underline" href="/privacy">
+              Privacy
+            </a>{" "}
+            and{" "}
+            <a className="underline" href="/terms">
+              Terms
+            </a>
+            .
+          </p>
+        </details>
       </div>
 
       {(error || message) && (

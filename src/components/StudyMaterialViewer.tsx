@@ -19,10 +19,10 @@ export function StudyMaterialViewer({
   onAddFiles,
   onTranscriptReady,
 }: Props) {
-  const sourceDescription =
+  const transcriptNotice =
     material.kind === "transcript" && material.text.length > MAX_REVIEW_CHARS
       ? `The full transcript remains available above. Gemini reviewer requests use its first ${MAX_REVIEW_CHARS.toLocaleString()} characters.`
-      : "Your original file stays in this browser. Generating a reviewer or transcribing a selected audio/video file sends that chosen content to Google Gemini.";
+      : null;
   const fileInput = useRef<HTMLInputElement>(null);
   const youtubeId = material.youtubeUrl
     ? extractYouTubeId(material.youtubeUrl)
@@ -150,6 +150,11 @@ export function StudyMaterialViewer({
         )}
       </div>
 
+      {transcriptNotice && (
+        <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
+          {transcriptNotice}
+        </p>
+      )}
       <StudyReviewerDock
         title={material.name}
         sourceText={material.text}
@@ -163,7 +168,6 @@ export function StudyMaterialViewer({
             : []
         }
         onTranscriptReady={onTranscriptReady}
-        sourceDescription={sourceDescription}
       />
     </div>
   );
