@@ -1,6 +1,5 @@
 import { useState } from "react";
 import {
-  BookOpenCheck,
   Check,
   ChevronDown,
   Clipboard,
@@ -16,6 +15,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
+import { LogoMark } from "./Logo";
 import {
   checkGeminiApiKey,
   generateStudyReview,
@@ -23,7 +23,10 @@ import {
   removeGeminiApiKey,
   saveGeminiApiKey,
 } from "../lib/gemini";
+import { exportStudyReviewerPdf } from "../lib/reviewerPdfExporter";
 import type { GeneratedTranscript, StudyReview } from "../types/study";
+
+export type ReviewerStage = "closed" | "compact" | "half" | "full";
 
 interface Props {
   title: string;
@@ -32,6 +35,8 @@ interface Props {
   youtubeUrl?: string;
   youtubeUrls?: string[];
   compact?: boolean;
+  stage?: ReviewerStage;
+  onSetStage?: (stage: ReviewerStage) => void;
   isFullScreen?: boolean;
   onToggleFullScreen?: () => void;
   onTranscriptReady?: (transcript: GeneratedTranscript) => void;
@@ -64,26 +69,115 @@ function friendlyError(error: unknown): string {
   );
 }
 
-function reviewAsText(review: StudyReview): string {
+function reviewAsMarkdown(review: StudyReview, includeAnswers = true): string {
   return [
-    review.title,
+    `# ${review.title}`,
     "",
+    "## Study Summary",
     review.summary,
     "",
-    "KEY POINTS",
-    ...review.keyPoints.map((point) => `• ${point}`),
+    "## Key Ideas",
+    ...review.keyPoints.map((point, index) => `${index + 1}. ${point}`),
     "",
-    "KEY TERMS",
+    "## Key Terms",
     ...review.terms.map(
-      (term) => `${term.term}: ${term.definition} (${term.source})`,
+      (term) =>
+        `- **${term.term}**: ${term.definition}${term.source ? ` *(${term.source})*` : ""}`,
     ),
     "",
-    "QUESTIONS AND ANSWERS",
-    ...review.questions.map(
-      (item, index) =>
-        `${index + 1}. ${item.question}${item.options.length ? `\n${item.options.map((option, i) => `   ${String.fromCharCode(65 + i)}. ${option}`).join("\n")}` : ""}\nAnswer: ${item.answer}\nWhy: ${item.explanation}\nSource: ${item.source}`,
-    ),
-  ].join("\n");
+    `## Practice Questions${includeAnswers ? " (with Answers)" : ""}`,
+    ...review.questions.map((item, index) => {
+      const parts = [`### ${index + 1}. ${item.question}`];
+      if (item.options.length) {
+        parts.push(
+          ...item.options.map(
+            (option, i) => `   ${String.fromCharCode(65 + i)}. ${option}`,
+          ),
+        );
+      }
+      if (includeAnswers) {
+        parts.push(`**Answer:** ${item.answer}`);
+        if (item.explanation) parts.push(`*Why:* ${item.explanation}`);
+      }
+      if (item.source) parts.push(`*Source:* ${item.source}`);
+      return parts.join("\n");
+    }),
+    "",
+    "---",
+    "*AI-generated study aid. Verify important facts with course material.*",
+  ].join("\n\n");
+}
+
+function reviewAsHtml(review: StudyReview, includeAnswers = true): string {
+  const escapeHtml = (text: string) =>
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  return `<div style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #18181b; max-width: 800px;">
+  <h1 style="color: #09090b; font-size: 22px; border-bottom: 2px solid #e4e4e7; padding-bottom: 8px;">${escapeHtml(review.title)}</h1>
+  <h2 style="color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 20px;">Study Summary</h2>
+  <p style="font-size: 14px; color: #3f3f46;">${escapeHtml(review.summary)}</p>
+  ${
+    review.keyPoints.length
+      ? `
+  <h2 style="color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 20px;">Key Ideas</h2>
+  <ol style="padding-left: 20px;">
+    ${review.keyPoints.map((point) => `<li style="margin-bottom: 6px; font-size: 14px;">${escapeHtml(point)}</li>`).join("")}
+  </ol>`
+      : ""
+  }
+  ${
+    review.terms.length
+      ? `
+  <h2 style="color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 20px;">Key Terms</h2>
+  <dl style="margin: 0;">
+    ${review.terms
+      .map(
+        (term) => `
+      <div style="margin-bottom: 10px;">
+        <dt style="font-weight: 700; color: #09090b;">${escapeHtml(term.term)}</dt>
+        <dd style="margin: 2px 0 0; color: #52525b; font-size: 14px;">${escapeHtml(term.definition)} ${term.source ? `<span style="color: #4f46e5; font-size: 12px;">(${escapeHtml(term.source)})</span>` : ""}</dd>
+      </div>`,
+      )
+      .join("")}
+  </dl>`
+      : ""
+  }
+  ${
+    review.questions.length
+      ? `
+  <h2 style="color: #4f46e5; font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; margin-top: 20px;">Practice Questions</h2>
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    ${review.questions
+      .map(
+        (item, index) => `
+      <div style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 12px; background: #fafafa;">
+        <p style="font-weight: 600; margin: 0 0 6px;">${index + 1}. ${escapeHtml(item.question)}</p>
+        ${
+          item.options.length
+            ? `<ol type="A" style="margin: 0 0 8px; padding-left: 20px; font-size: 13px; color: #52525b;">
+          ${item.options.map((opt) => `<li>${escapeHtml(opt)}</li>`).join("")}
+        </ol>`
+            : ""
+        }
+        ${
+          includeAnswers
+            ? `<div style="border-top: 1px solid #e4e4e7; padding-top: 6px; margin-top: 6px;">
+          <p style="color: #15803d; font-weight: 600; font-size: 13px; margin: 0;">Answer: ${escapeHtml(item.answer)}</p>
+          ${item.explanation ? `<p style="color: #52525b; font-size: 13px; margin: 3px 0 0;">Why: ${escapeHtml(item.explanation)}</p>` : ""}
+        </div>`
+            : ""
+        }
+        ${item.source ? `<p style="color: #6366f1; font-size: 11px; margin: 5px 0 0;">Source: ${escapeHtml(item.source)}</p>` : ""}
+      </div>`,
+      )
+      .join("")}
+  </div>`
+      : ""
+  }
+  <p style="border-top: 1px solid #e4e4e7; margin-top: 20px; padding-top: 10px; font-size: 11px; color: #a1a1aa;">
+    AI-generated study aid. Verify important facts with course material.
+  </p>
+</div>`;
 }
 
 export function StudyReviewer({
@@ -107,6 +201,9 @@ export function StudyReviewer({
     "introductory" | "standard" | "challenging"
   >("standard");
   const [customPrompt, setCustomPrompt] = useState("");
+
+  const hasCourseText = Boolean(sourceText.trim()) || Boolean(pdfFile);
+  const [includeCourseText, setIncludeCourseText] = useState(true);
   const [selectedYoutubeUrls, setSelectedYoutubeUrls] = useState<string[]>([]);
   const [review, setReview] = useState<StudyReview>();
   const [loading, setLoading] = useState(false);
@@ -127,12 +224,12 @@ export function StudyReviewer({
       const next = await generateStudyReview({
         apiKey,
         title,
-        sourceText,
+        sourceText: includeCourseText ? sourceText : "",
         questionCount,
         difficulty,
         youtubeUrls: selectedYoutubeUrls,
         customPrompt: customPrompt.trim() ? customPrompt.trim() : undefined,
-        pdfFile,
+        pdfFile: includeCourseText ? pdfFile : undefined,
       });
       setReview(next);
       setAnswersVisible(true);
@@ -198,30 +295,38 @@ export function StudyReviewer({
     );
   }
 
-  function selectTextOnly() {
-    setSelectedYoutubeUrls([]);
-  }
-
   async function copy() {
     if (!review) return;
     try {
-      await navigator.clipboard.writeText(reviewAsText(review));
+      const markdown = reviewAsMarkdown(review, answersVisible);
+      const html = reviewAsHtml(review, answersVisible);
+      if (
+        typeof navigator.clipboard?.write === "function" &&
+        typeof window.ClipboardItem !== "undefined"
+      ) {
+        const item = new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([markdown], { type: "text/plain" }),
+        });
+        await navigator.clipboard.write([item]);
+      } else {
+        await navigator.clipboard.writeText(markdown);
+      }
       setCopied(true);
-      setMessage("Reviewer copied.");
-      window.setTimeout(() => setCopied(false), 1800);
+      setMessage("Reviewer copied with rich formatting.");
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
       setMessage("Clipboard access is unavailable in this browser.");
     }
   }
 
-  const isTextOnly = selectedYoutubeUrls.length === 0;
+  const hasSelectedSource =
+    (includeCourseText && hasCourseText) || selectedYoutubeUrls.length > 0;
   const canGenerate =
     Boolean(apiKey) &&
     keyDraft.trim() === apiKey &&
     !loading &&
-    (Boolean(sourceText.trim()) ||
-      Boolean(pdfFile) ||
-      selectedYoutubeUrls.length > 0);
+    hasSelectedSource;
 
   return (
     <section
@@ -235,9 +340,7 @@ export function StudyReviewer({
       <div className="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900">
-              <BookOpenCheck className="h-4 w-4" />
-            </div>
+            <LogoMark size={28} />
             <h2 className="text-base font-bold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-lg">
               Study Reviewer
             </h2>
@@ -278,7 +381,12 @@ export function StudyReviewer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  title="Download reviewer as PDF"
+                  onClick={() => {
+                    exportStudyReviewerPdf(review, answersVisible);
+                    setMessage("Reviewer PDF downloaded.");
+                    window.setTimeout(() => setMessage(""), 2200);
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-zinc-100 dark:text-zinc-900"
                 >
                   <Download className="h-3.5 w-3.5" />
@@ -286,6 +394,7 @@ export function StudyReviewer({
                 </button>
                 <button
                   type="button"
+                  title="Copy reviewer with formatting"
                   onClick={copy}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
                 >
@@ -397,7 +506,7 @@ export function StudyReviewer({
               className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
               aria-label="Number of questions"
             >
-              {[5, 10, 15, 20].map((count) => (
+              {[5, 10, 15, 20, 25].map((count) => (
                 <option key={count} value={count}>
                   {count} questions
                 </option>
@@ -445,41 +554,52 @@ export function StudyReviewer({
               value={customPrompt}
               onChange={(event) => setCustomPrompt(event.target.value)}
               rows={3}
-              placeholder="e.g. Focus on chapter 2, create 8 questions with detailed multiple-choice explanations, prioritize key dates and definitions..."
+              placeholder="e.g. Focus on chapter 2, create 20 questions with challenging multiple-choice explanations, prioritize key dates and interrupt numbers..."
               className="w-full rounded-xl border border-zinc-200 bg-white p-2.5 text-xs text-zinc-800 placeholder-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
             />
             <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Appended to Gemini instructions to customize question count,
-              topics, or difficulty.
+              Appended to Gemini instructions as a strict override for question
+              count, topics, or difficulty.
             </p>
           </div>
         </details>
 
-        {videoSources.length > 0 && (
+        {(hasCourseText || videoSources.length > 0) && (
           <div className="no-print mt-3.5 border-t border-zinc-200/80 pt-3 dark:border-zinc-800/80">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Include video in review
+                Sources to include in review
               </p>
-              {selectedYoutubeUrls.length > 0 && (
-                <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
-                  {selectedYoutubeUrls.length} selected
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {videoSources.length > 0 && hasCourseText && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIncludeCourseText(true);
+                      setSelectedYoutubeUrls([...videoSources]);
+                    }}
+                    className="text-[11px] font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                  >
+                    Select all
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={isTextOnly}
-                onClick={selectTextOnly}
-                className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
-                  isTextOnly
-                    ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                }`}
-              >
-                Text only
-              </button>
+              {hasCourseText && (
+                <button
+                  type="button"
+                  aria-pressed={includeCourseText}
+                  onClick={() => setIncludeCourseText((prev) => !prev)}
+                  className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
+                    includeCourseText
+                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                  }`}
+                >
+                  {pdfFile ? "Lesson PDF / text" : "Lesson text"}
+                </button>
+              )}
               {videoSources.map((url, index) => {
                 const isSelected = selectedYoutubeUrls.includes(url);
                 return (

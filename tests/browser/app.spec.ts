@@ -199,18 +199,60 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   await expect(generateButton).toBeEnabled();
 });
 
-test("study reviewer supports multi-video selection, custom prompt, and full screen toggle", async ({
+test("study reviewer supports 3-stage width, simultaneous text+video selection, and custom prompt", async ({
   page,
 }) => {
   await page.goto("/");
   await upload(page, await archive());
-  await page.getByRole("button", { name: "Open Summary & reviewer" }).click();
+  const openButton = page.getByRole("button", {
+    name: "Open Summary & reviewer",
+  });
+  const dock = page.getByRole("complementary", {
+    name: "Study reviewer extension",
+  });
+
+  // Stage 1: First click opens compact (~30% width)
+  await openButton.click();
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      if (!bounds) return -1;
+      const widthRatio = bounds.width / clientWidth;
+      return widthRatio > 0.2 && widthRatio < 0.45;
+    })
+    .toBe(true);
+
+  // Stage 2: Second click on the same tab handle expands to 50%
+  const tabHandle = page.getByRole("button", {
+    name: "Collapse Summary & reviewer",
+  });
+  await tabHandle.click();
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      if (!bounds) return -1;
+      const widthRatio = bounds.width / clientWidth;
+      return Math.abs(widthRatio - 0.5) < 0.05;
+    })
+    .toBe(true);
+
   await page.getByLabel("Gemini API key").fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
 
+  // Test simultaneous text + video selection (e.g. Lesson text + Video 1)
+  const textSourceBtn = page.getByRole("button", { name: /Lesson text/i });
+  await expect(textSourceBtn).toHaveAttribute("aria-pressed", "true");
   const video1 = page.getByRole("button", { name: "Video 1", exact: true });
   await video1.click();
   await expect(video1).toHaveAttribute("aria-pressed", "true");
+  // Both are pressed!
+  await expect(textSourceBtn).toHaveAttribute("aria-pressed", "true");
 
   const customPromptSummary = page.getByText(
     "Custom prompt & instructions (optional)",
@@ -219,12 +261,23 @@ test("study reviewer supports multi-video selection, custom prompt, and full scr
   await customPromptSummary.click();
   const promptInput = page.getByPlaceholder(/Focus on chapter 2/i);
   await expect(promptInput).toBeVisible();
-  await promptInput.fill("Create 5 questions focusing on key terms");
+  await promptInput.fill("Create 20 questions focusing on key terms");
 
+  // Stage 3: Full screen expands from right to left (right edge pinned)
   const fullScreenButton = page.getByRole("button", { name: "Full screen" });
   await expect(fullScreenButton).toBeVisible();
   await fullScreenButton.click();
   await expect(page.getByRole("button", { name: "50% view" })).toBeVisible();
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      return bounds ? Math.round(bounds.x + bounds.width) - clientWidth : -1;
+    })
+    .toBe(0);
+
   await page.getByRole("button", { name: "50% view" }).click();
   await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
 });
