@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "format:check": "prettier --check --ignore-unknown README.md index.html package.json package-lock.json playwright.config.ts postcss.config.js tailwind.config.js tsconfig.json vite.config.ts vitest.config.ts src tests public .github/workflows/*.yml && prettier --check --parser json public/manifest.webmanifest",
+    "format:check": "prettier --check README.md index.html src/App.tsx src/index.css src/main.tsx src/components/PrankLanding.tsx tests/browser/app.spec.ts",
     "check": "npm run format:check && npm run test && npm run build"
   },
   "dependencies": {

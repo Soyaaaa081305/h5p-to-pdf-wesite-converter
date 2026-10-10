@@ -9,17 +9,24 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   </React.StrictMode>,
 );
 
-// Register Service Worker for offline PWA caching
+// Remove the offline app shell left by the previous version of this page.
 if ("serviceWorker" in navigator && import.meta.env.PROD) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
-      .register("./sw.js")
-      .then((reg) => {
-        reg.update();
-        console.log("H5P to PDF PWA service worker registered:", reg.scope);
+      .getRegistrations()
+      .then(async (registrations) => {
+        const pageScope = new URL("./", window.location.href).href;
+        await Promise.all(
+          registrations
+            .filter((registration) => registration.scope === pageScope)
+            .map((registration) => registration.unregister()),
+        );
+        if ("caches" in window) {
+          await caches.delete("h5p-pdf-shell-v3");
+        }
       })
       .catch((err) => {
-        console.warn("H5P to PDF service worker registration failed:", err);
+        console.warn("Could not clear the previous offline app shell:", err);
       });
   });
 }
