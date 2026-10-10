@@ -5,8 +5,12 @@ import { useTheme } from "../lib/theme";
 import { HelpDialog } from "./HelpDialog";
 
 // 1-Click Bookmark: Instantly opens the H5P to PDF Converter from any tab or Blackboard
+const bookmarkTarget =
+  import.meta.env.VITE_APP_BASE_URL || "https://h5p-to-pdf-converter.web.app/";
 export const BOOKMARKLET_CODE =
-  "javascript:(function(){window.open('https://soyaaaa081305.github.io/H5p-Auto-SS/','_blank');})();";
+  "javascript:(function(){var w=window.open(" +
+  JSON.stringify(bookmarkTarget) +
+  ", '_blank');if(w)w.opener=null;})();";
 
 export const Header: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -25,10 +29,25 @@ export const Header: React.FC = () => {
     setShowBookmarkHelp(true);
   };
 
+  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault();
+      window.history.pushState({}, "", "/");
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  };
+
   return (
     <header className="no-print bg-white dark:bg-zinc-900 border-b border-zinc-200/80 dark:border-zinc-800 sticky top-0 z-30 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-        <Logo size={28} />
+        <a
+          href="/"
+          onClick={handleHomeClick}
+          className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-90 cursor-pointer"
+          title="H5P to PDF Converter"
+        >
+          <Logo size={28} />
+        </a>
 
         <div className="flex items-center gap-3">
           {/* Bookmark Button */}

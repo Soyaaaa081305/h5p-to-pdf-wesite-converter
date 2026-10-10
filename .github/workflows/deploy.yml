@@ -17,9 +17,19 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+      # Gate production dependencies; the Tailwind 3 build toolchain currently
+      # has upstream dev-only advisories with no patched braces release.
       - run: npm audit --omit=dev --audit-level=moderate
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Build the GitHub Pages domain notice
+        run: npm run build:github-pages
+        env:
+          VITE_DEPLOY_TARGET: github-pages
+      - name: Verify the GitHub Pages domain notice
+        run: npm run test:e2e -- --grep "GitHub Pages handoff"
+        env:
+          VITE_DEPLOY_TARGET: github-pages
       - uses: actions/upload-artifact@v4
         with:
           name: site

@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "default": "h5p-study-reviewer"
+  },
+  "targets": {
+    "h5p-study-reviewer": {
+      "hosting": {
+        "app": [
+          "h5p-to-pdf-converter"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

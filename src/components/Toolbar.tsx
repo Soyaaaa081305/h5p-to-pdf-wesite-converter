@@ -183,8 +183,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         ref={addFileInputRef}
         type="file"
         multiple
-        accept=".h5p,.zip"
-        className="hidden"
+        accept=".h5p,.zip,.pdf,.html,.htm,.txt,.md,.srt,.vtt"
+        className="sr-only"
+        tabIndex={-1}
+        aria-label="Choose additional study files"
         onChange={handleAddFileInputChange}
       />
 
@@ -252,10 +254,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 type="button"
                 onClick={() => addFileInputRef.current?.click()}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-400 dark:hover:border-zinc-500 text-xs font-medium flex-shrink-0 transition-colors"
-                title="Add another .h5p module to playlist"
+                title="Add another course or study source"
               >
                 <Plus className="w-3 h-3" />
-                <span>Add Module</span>
+                <span>Add Source</span>
               </button>
             </div>
           </div>

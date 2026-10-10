@@ -625,21 +625,26 @@ class Pages {
     }
   }
 
-  save(name: string) {
+  toBlob(): Blob {
     this.flush();
     if (!this.count) {
       this.text("No exportable package content.");
       this.flush();
     }
     const blob = this.doc.output("blob");
+    this.page.width = 0;
+    this.page.height = 0;
+    return blob;
+  }
+
+  save(name: string) {
+    const blob = this.toBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `${filename(name)}.pdf`;
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    this.page.width = 0;
-    this.page.height = 0;
   }
 }
 
@@ -666,11 +671,11 @@ export async function exportAnswerKey(
   pages.save("H5P Answer Key");
 }
 
-async function exportPackages(
+export async function renderPackageToPdfBlob(
   packages: H5PPackage[],
   onProgress?: (current: number, total: number, name: string) => void,
   signal?: AbortSignal,
-) {
+): Promise<Blob> {
   const pages = new Pages();
   let current = 0;
   const total = packages.reduce((n, p) => n + p.report.nodes.length, 0);
@@ -783,11 +788,34 @@ async function exportPackages(
   }
 
   signal?.throwIfAborted();
-  pages.save(
+  return pages.toBlob();
+}
+
+export async function exportPackageToPdfFile(
+  pkg: H5PPackage,
+  signal?: AbortSignal,
+): Promise<File> {
+  const blob = await renderPackageToPdfBlob([pkg], undefined, signal);
+  const title = filename(pkg.metadata.title || pkg.fileName || "Course Module");
+  return new File([blob], `${title}.pdf`, { type: "application/pdf" });
+}
+
+async function exportPackages(
+  packages: H5PPackage[],
+  onProgress?: (current: number, total: number, name: string) => void,
+  signal?: AbortSignal,
+) {
+  const blob = await renderPackageToPdfBlob(packages, onProgress, signal);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${filename(
     packages.length === 1
       ? packages[0].metadata.title || packages[0].fileName
       : "Course All Modules Bundle",
-  );
+  )}.pdf`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const exportSlidesToPdf = (

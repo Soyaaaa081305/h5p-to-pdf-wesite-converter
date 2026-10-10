@@ -1,8 +1,19 @@
+import { useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 
 const appUrl = "https://h5p-to-pdf-converter.web.app";
 
 export function PrankLanding() {
+  useEffect(() => {
+    document.title = "Halaa, nascam ka! — H5P domain update";
+    document
+      .querySelector<HTMLMetaElement>('meta[name="description"]')
+      ?.setAttribute(
+        "content",
+        "A playful domain update for the H5P study reviewer. Find the app at its new Firebase address.",
+      );
+  }, []);
+
   return (
     <div className="prank-page">
       <div className="notice-ticker" aria-label="Domain update notice">
