@@ -197,7 +197,6 @@ export function StudyReviewer({
   compact = false,
   stage,
   onSetStage,
-  onStepDown,
   onClose,
   isFullScreen = false,
   onToggleFullScreen,
@@ -363,11 +362,12 @@ export function StudyReviewer({
           : "my-8 rounded-2xl border border-zinc-200 shadow-sm dark:border-zinc-800"
       }`}
     >
-      <div className="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6 sm:py-5">
+      {/* Sleek, Concise Header */}
+      <div className="border-b border-zinc-200 bg-zinc-50/70 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
-            <LogoMark size={28} />
-            <h2 className="text-base font-bold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-lg">
+            <LogoMark size={26} />
+            <h2 className="text-base font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
               Study Reviewer
             </h2>
           </div>
@@ -381,7 +381,7 @@ export function StudyReviewer({
                 <button
                   type="button"
                   onClick={() => onSetStage("compact")}
-                  className={`rounded-lg px-2 py-1 text-xs transition ${
+                  className={`rounded-lg px-2.5 py-1 text-xs transition ${
                     stage === "compact"
                       ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50"
                       : "hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -393,7 +393,7 @@ export function StudyReviewer({
                 <button
                   type="button"
                   onClick={() => onSetStage("half")}
-                  className={`rounded-lg px-2 py-1 text-xs transition ${
+                  className={`rounded-lg px-2.5 py-1 text-xs transition ${
                     stage === "half"
                       ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50"
                       : "hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -405,7 +405,7 @@ export function StudyReviewer({
                 <button
                   type="button"
                   onClick={() => onSetStage("full")}
-                  className={`rounded-lg px-2 py-1 text-xs transition ${
+                  className={`rounded-lg px-2.5 py-1 text-xs transition ${
                     stage === "full"
                       ? "bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-zinc-50"
                       : "hover:text-zinc-900 dark:hover:text-zinc-100"
@@ -416,36 +416,18 @@ export function StudyReviewer({
                 </button>
               </div>
             )}
-            {stage === "half" && onStepDown && (
-              <button
-                type="button"
-                onClick={onStepDown}
-                aria-label="30% view"
-                title="Collapse to 30% view (Stage 1)"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-              >
-                <Minimize2 className="h-3.5 w-3.5" />
-                <span>30% view</span>
-              </button>
-            )}
             {onToggleFullScreen && (
               <button
                 type="button"
                 onClick={onToggleFullScreen}
                 aria-label={isFullScreen ? "50% view" : "Full screen"}
                 title={isFullScreen ? "50% view" : "Full screen"}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
               >
                 {isFullScreen ? (
-                  <>
-                    <Minimize2 className="h-3.5 w-3.5" />
-                    <span>50% view</span>
-                  </>
+                  <Minimize2 className="h-4 w-4" />
                 ) : (
-                  <>
-                    <Maximize2 className="h-3.5 w-3.5" />
-                    <span>Full screen</span>
-                  </>
+                  <Maximize2 className="h-4 w-4" />
                 )}
               </button>
             )}
@@ -457,7 +439,7 @@ export function StudyReviewer({
                 title="Close reviewer"
                 className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white p-1.5 text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             )}
             {review && (
@@ -502,168 +484,201 @@ export function StudyReviewer({
             )}
           </div>
         </div>
+      </div>
 
-        <div className="no-print mt-5 max-w-xl">
-          <label
-            htmlFor="gemini-api-key"
-            className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
-          >
-            Gemini API key
-          </label>
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[200px] flex-1 max-w-sm sm:max-w-md">
-              <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-              <input
-                id="gemini-api-key"
-                type={keyVisible ? "text" : "password"}
-                value={keyDraft}
-                onChange={(event) => {
-                  setKeyDraft(event.target.value);
-                  setKeyFeedback("");
-                }}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="Paste your Gemini API key"
-                className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-10 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 sm:text-sm"
-              />
-              <button
-                type="button"
-                onClick={() => setKeyVisible((visible) => !visible)}
-                aria-label={keyVisible ? "Hide API key" : "Show API key"}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+      {/* Centered Reader Body */}
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8 space-y-6">
+        {(error || message) && (
+          <div className="no-print space-y-2">
+            {error && (
+              <p
+                role="alert"
+                className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
               >
-                {keyVisible ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+                {error}
+              </p>
+            )}
+            {message && (
+              <p
+                role="status"
+                className="text-xs font-medium text-emerald-700 dark:text-emerald-300"
+              >
+                {message}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Configuration Card */}
+        <div className="no-print rounded-2xl border border-zinc-200/90 bg-zinc-50/70 p-4 sm:p-5 shadow-xs dark:border-zinc-800 dark:bg-zinc-800/40 space-y-4">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <label
+                htmlFor="gemini-api-key"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-200"
+              >
+                Gemini API key
+              </label>
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+              >
+                Get API key from Google AI Studio
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+              </a>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={saveKey}
-                disabled={!keyDraft.trim()}
-                className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-3.5 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-              >
-                Save key
-              </button>
-              <button
-                type="button"
-                onClick={testKey}
-                disabled={!keyDraft.trim() || checkingKey}
-                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-              >
-                {checkingKey && (
-                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                )}
-                {checkingKey ? "Checking" : "Test key"}
-              </button>
-              {apiKey && (
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <input
+                  id="gemini-api-key"
+                  type={keyVisible ? "text" : "password"}
+                  value={keyDraft}
+                  onChange={(event) => {
+                    setKeyDraft(event.target.value);
+                    setKeyFeedback("");
+                  }}
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="Paste your Gemini API key"
+                  className="h-9 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-9 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                />
                 <button
                   type="button"
-                  onClick={clearKey}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  onClick={() => setKeyVisible((visible) => !visible)}
+                  aria-label={keyVisible ? "Hide API key" : "Show API key"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                  {keyVisible ? (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5" />
+                  )}
                 </button>
-              )}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={saveKey}
+                  disabled={!keyDraft.trim()}
+                  className="inline-flex h-9 items-center justify-center rounded-xl bg-zinc-900 px-3 text-xs font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                >
+                  Save key
+                </button>
+                <button
+                  type="button"
+                  onClick={testKey}
+                  disabled={!keyDraft.trim() || checkingKey}
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  {checkingKey && (
+                    <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                  )}
+                  {checkingKey ? "Checking" : "Test key"}
+                </button>
+                {apiKey && (
+                  <button
+                    type="button"
+                    onClick={clearKey}
+                    title="Remove key"
+                    aria-label="Remove key"
+                    className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-zinc-200 bg-white px-2.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-zinc-500" />
+                    <span className="hidden sm:inline">Remove</span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-          {keyFeedback && (
-            <p
-              role={keyFeedbackError ? "alert" : "status"}
-              className={`mt-2 text-xs ${keyFeedbackError ? "text-rose-700 dark:text-rose-300" : "text-emerald-700 dark:text-emerald-300"}`}
-            >
-              {keyFeedback}
-            </p>
-          )}
-          <div className="mt-2 flex items-center justify-between">
-            <a
-              href="https://aistudio.google.com/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-400"
-            >
-              Get API key from Google AI Studio
-              <ExternalLink className="h-3 w-3" aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-
-        <div className="no-print mt-4 flex max-w-2xl flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={questionCount}
-              onChange={(event) => setQuestionCount(Number(event.target.value))}
-              className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              aria-label="Number of questions"
-            >
-              {[5, 10, 15, 20, 25].map((count) => (
-                <option key={count} value={count}>
-                  {count} questions
-                </option>
-              ))}
-            </select>
-            <select
-              value={difficulty}
-              onChange={(event) =>
-                setDifficulty(event.target.value as typeof difficulty)
-              }
-              className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-              aria-label="Difficulty"
-            >
-              <option value="introductory">Introductory</option>
-              <option value="standard">Standard</option>
-              <option value="challenging">Challenging</option>
-            </select>
-          </div>
-          <button
-            type="button"
-            onClick={generate}
-            disabled={!canGenerate}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-          >
-            {loading ? (
-              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            {loading
-              ? "Generating…"
-              : review
-                ? "Regenerate"
-                : "Generate reviewer"}
-          </button>
-        </div>
-
-        <details className="group no-print mt-3 max-w-2xl text-xs text-zinc-600 dark:text-zinc-400">
-          <summary className="flex cursor-pointer select-none items-center gap-1.5 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-400 transition-colors group-open:text-indigo-600 dark:group-open:text-indigo-400" />
-            <span>Custom prompt & instructions (optional)</span>
-          </summary>
-          <div className="pt-2">
-            <textarea
-              value={customPrompt}
-              onChange={(event) => setCustomPrompt(event.target.value)}
-              rows={3}
-              placeholder="e.g. Focus on chapter 2, create 20 questions with challenging multiple-choice explanations, prioritize key dates and interrupt numbers..."
-              className="w-full rounded-xl border border-zinc-200 bg-white p-2.5 text-xs text-zinc-800 placeholder-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
-            />
-            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Appended to Gemini instructions as a strict override for question
-              count, topics, or difficulty.
-            </p>
-          </div>
-        </details>
-
-        {(hasCourseText || videoSources.length > 0) && (
-          <div className="no-print mt-3.5 border-t border-zinc-200/80 pt-3 dark:border-zinc-800/80">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                Sources to include in review
+            {keyFeedback && (
+              <p
+                role={keyFeedbackError ? "alert" : "status"}
+                className={`mt-1.5 text-xs font-medium ${keyFeedbackError ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}
+              >
+                {keyFeedback}
               </p>
-              <div className="flex items-center gap-2">
+            )}
+          </div>
+
+          {/* Options & Action Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-zinc-200/70 dark:border-zinc-750">
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={questionCount}
+                onChange={(event) =>
+                  setQuestionCount(Number(event.target.value))
+                }
+                className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                aria-label="Number of questions"
+              >
+                {[5, 10, 15, 20, 25].map((count) => (
+                  <option key={count} value={count}>
+                    {count} questions
+                  </option>
+                ))}
+              </select>
+              <select
+                value={difficulty}
+                onChange={(event) =>
+                  setDifficulty(event.target.value as typeof difficulty)
+                }
+                className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                aria-label="Difficulty"
+              >
+                <option value="introductory">Introductory</option>
+                <option value="standard">Standard</option>
+                <option value="challenging">Challenging</option>
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={generate}
+              disabled={!canGenerate}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            >
+              {loading ? (
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {loading
+                ? "Generating…"
+                : review
+                  ? "Regenerate"
+                  : "Generate reviewer"}
+            </button>
+          </div>
+
+          {/* Custom Prompt Accordion */}
+          <details className="group text-xs text-zinc-600 dark:text-zinc-400">
+            <summary className="flex cursor-pointer select-none items-center gap-1.5 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
+              <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-400 transition-colors group-open:text-indigo-600 dark:group-open:text-indigo-400" />
+              <span>Custom prompt & instructions (optional)</span>
+            </summary>
+            <div className="pt-2">
+              <textarea
+                value={customPrompt}
+                onChange={(event) => setCustomPrompt(event.target.value)}
+                rows={3}
+                placeholder="e.g. Focus on chapter 2, create 20 questions with challenging multiple-choice explanations, prioritize key dates and interrupt numbers..."
+                className="w-full rounded-xl border border-zinc-200 bg-white p-2.5 text-xs text-zinc-800 placeholder-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
+              />
+              <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Appended to Gemini instructions as a strict override for
+                question count, topics, or difficulty.
+              </p>
+            </div>
+          </details>
+
+          {/* Sources to Include */}
+          {(hasCourseText || videoSources.length > 0) && (
+            <div className="border-t border-zinc-200/70 pt-3 dark:border-zinc-750">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  Sources to include in review
+                </p>
                 {videoSources.length > 0 && hasCourseText && (
                   <button
                     type="button"
@@ -677,282 +692,276 @@ export function StudyReviewer({
                   </button>
                 )}
               </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {hasCourseText && (
+                  <button
+                    type="button"
+                    aria-pressed={includeCourseText}
+                    onClick={() => setIncludeCourseText((prev) => !prev)}
+                    className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
+                      includeCourseText
+                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
+                    {sourcePdfLabel
+                      ? sourcePdfLabel
+                      : pdfFile || getPdfFile
+                        ? "Course PDF"
+                        : "Lesson text"}
+                  </button>
+                )}
+                {videoSources.map((url, index) => {
+                  const isSelected = selectedYoutubeUrls.includes(url);
+                  return (
+                    <div key={url} className="inline-flex items-center">
+                      <button
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => toggleVideo(url)}
+                        className={`min-h-8 touch-manipulation rounded-l-lg border px-3 text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                            : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                        }`}
+                      >
+                        Video {index + 1}
+                      </button>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`Open video ${index + 1} on YouTube`}
+                        title="Watch on YouTube"
+                        className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {hasCourseText && (
-                <button
-                  type="button"
-                  aria-pressed={includeCourseText}
-                  onClick={() => setIncludeCourseText((prev) => !prev)}
-                  className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
-                    includeCourseText
-                      ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                      : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                  }`}
-                >
-                  {sourcePdfLabel
-                    ? `${sourcePdfLabel} / Lesson text`
-                    : pdfFile || getPdfFile
-                      ? "Lesson PDF / text"
-                      : "Lesson text"}
-                </button>
-              )}
-              {videoSources.map((url, index) => {
-                const isSelected = selectedYoutubeUrls.includes(url);
-                return (
-                  <div key={url} className="inline-flex items-center">
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => toggleVideo(url)}
-                      className={`min-h-8 touch-manipulation rounded-l-lg border px-3 text-xs font-medium transition-colors ${
-                        isSelected
-                          ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                      }`}
-                    >
-                      Video {index + 1}
-                    </button>
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`Open video ${index + 1} on YouTube`}
-                      title="Watch on YouTube"
-                      className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {(error || message) && (
-        <div className="no-print px-5 pt-4 sm:px-7">
-          {error && (
-            <p
-              role="alert"
-              className="rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200"
-            >
-              {error}
-            </p>
-          )}
-          {message && (
-            <p
-              role="status"
-              className="mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300"
-            >
-              {message}
-            </p>
           )}
         </div>
-      )}
 
-      {review ? (
-        <div className="space-y-8 px-5 py-6 sm:px-7 sm:py-8">
-          <div className="no-print -mt-2 flex flex-wrap items-center gap-1.5 border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
-            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-              View:
-            </span>
-            <button
-              type="button"
-              onClick={() => setActiveReviewSection("all")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                activeReviewSection === "all"
-                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              }`}
-            >
-              All sections
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveReviewSection("summary")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                activeReviewSection === "summary"
-                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              }`}
-            >
-              Study summary
-            </button>
-            {review.keyPoints.length > 0 && (
+        {review ? (
+          <div className="space-y-8">
+            <div className="no-print -mt-2 flex flex-wrap items-center gap-1.5 border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
+              <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                View:
+              </span>
               <button
                 type="button"
-                onClick={() => setActiveReviewSection("ideas")}
+                onClick={() => setActiveReviewSection("all")}
                 className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                  activeReviewSection === "ideas"
+                  activeReviewSection === "all"
                     ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 }`}
               >
-                Key ideas ({review.keyPoints.length})
+                All sections
               </button>
-            )}
-            {review.terms.length > 0 && (
               <button
                 type="button"
-                onClick={() => setActiveReviewSection("terms")}
+                onClick={() => setActiveReviewSection("summary")}
                 className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                  activeReviewSection === "terms"
+                  activeReviewSection === "summary"
                     ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
                     : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 }`}
               >
-                Key terms ({review.terms.length})
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setActiveReviewSection("questions")}
-              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
-                activeReviewSection === "questions"
-                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
-                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-              }`}
-            >
-              Questions ({review.questions.length})
-            </button>
-          </div>
-
-          {(activeReviewSection === "all" ||
-            activeReviewSection === "summary") && (
-            <article>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
                 Study summary
-              </p>
-              <h3 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-                {review.title}
-              </h3>
-              <div className="mt-3 max-w-4xl space-y-3 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
-                {review.summary
-                  .split(/\n\n+/)
-                  .filter((p) => p.trim())
-                  .map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
-              </div>
-            </article>
-          )}
+              </button>
+              {review.keyPoints.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveReviewSection("ideas")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                    activeReviewSection === "ideas"
+                      ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  Key ideas ({review.keyPoints.length})
+                </button>
+              )}
+              {review.terms.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveReviewSection("terms")}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                    activeReviewSection === "terms"
+                      ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                      : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  Key terms ({review.terms.length})
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setActiveReviewSection("questions")}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  activeReviewSection === "questions"
+                    ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                }`}
+              >
+                Questions ({review.questions.length})
+              </button>
+            </div>
 
-          {(activeReviewSection === "all" || activeReviewSection === "ideas") &&
-            review.keyPoints.length > 0 && (
-              <section>
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Key ideas
+            {(activeReviewSection === "all" ||
+              activeReviewSection === "summary") && (
+              <article>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
+                  Study summary
+                </p>
+                <h3 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  {review.title}
                 </h3>
-                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {review.keyPoints.map((point, index) => (
-                    <li
-                      key={`${index}-${point.slice(0, 24)}`}
-                      className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
-                    >
-                      <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-300">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-              </section>
+                <div className="mt-3 max-w-4xl space-y-3 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
+                  {review.summary
+                    .split(/\n\n+/)
+                    .filter((p) => p.trim())
+                    .map((para, i) => (
+                      <p key={i}>{para}</p>
+                    ))}
+                </div>
+              </article>
             )}
 
-          {(activeReviewSection === "all" || activeReviewSection === "terms") &&
-            review.terms.length > 0 && (
+            {(activeReviewSection === "all" ||
+              activeReviewSection === "ideas") &&
+              review.keyPoints.length > 0 && (
+                <section>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Key ideas
+                  </h3>
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {review.keyPoints.map((point, index) => (
+                      <li
+                        key={`${index}-${point.slice(0, 24)}`}
+                        className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
+                      >
+                        <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-300">
+                          {String(index + 1).padStart(2, "0")}
+                        </span>
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+            {(activeReviewSection === "all" ||
+              activeReviewSection === "terms") &&
+              review.terms.length > 0 && (
+                <section>
+                  <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    Key terms
+                  </h3>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {review.terms.map((term, index) => (
+                      <article
+                        key={`${index}-${term.term}`}
+                        className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800"
+                      >
+                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100">
+                          {term.term}
+                        </h4>
+                        <p className="mt-1.5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                          {term.definition}
+                        </p>
+                        <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+                          {term.source}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+            {(activeReviewSection === "all" ||
+              activeReviewSection === "questions") && (
               <section>
                 <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Key terms
+                  Practice questions
                 </h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {review.terms.map((term, index) => (
+                <div className="mt-3 space-y-3">
+                  {review.questions.map((item, index) => (
                     <article
-                      key={`${index}-${term.term}`}
-                      className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800"
+                      key={`${index}-${item.question.slice(0, 28)}`}
+                      className="break-inside-avoid rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
                     >
-                      <h4 className="font-bold text-zinc-900 dark:text-zinc-100">
-                        {term.term}
-                      </h4>
-                      <p className="mt-1.5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                        {term.definition}
-                      </p>
-                      <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
-                        {term.source}
-                      </p>
+                      <div className="flex gap-3">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
+                            {item.question}
+                          </p>
+                          {item.options.length > 0 && (
+                            <ol className="mt-2 list-[upper-alpha] space-y-1 pl-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                              {item.options.map((option, optionIndex) => (
+                                <li
+                                  key={`${optionIndex}-${option.slice(0, 20)}`}
+                                >
+                                  {option}
+                                </li>
+                              ))}
+                            </ol>
+                          )}
+                          {answersVisible && (
+                            <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                                Answer:{" "}
+                                <span className="font-normal">
+                                  {item.answer}
+                                </span>
+                              </p>
+                              {item.explanation && (
+                                <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                                  {item.explanation}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+                            Source: {item.source}
+                          </p>
+                        </div>
+                      </div>
                     </article>
                   ))}
                 </div>
               </section>
             )}
-
-          {(activeReviewSection === "all" ||
-            activeReviewSection === "questions") && (
-            <section>
-              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Practice questions
-              </h3>
-              <div className="mt-3 space-y-3">
-                {review.questions.map((item, index) => (
-                  <article
-                    key={`${index}-${item.question.slice(0, 28)}`}
-                    className="break-inside-avoid rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
-                  >
-                    <div className="flex gap-3">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
-                          {item.question}
-                        </p>
-                        {item.options.length > 0 && (
-                          <ol className="mt-2 list-[upper-alpha] space-y-1 pl-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                            {item.options.map((option, optionIndex) => (
-                              <li key={`${optionIndex}-${option.slice(0, 20)}`}>
-                                {option}
-                              </li>
-                            ))}
-                          </ol>
-                        )}
-                        {answersVisible && (
-                          <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                              Answer:{" "}
-                              <span className="font-normal">{item.answer}</span>
-                            </p>
-                            {item.explanation && (
-                              <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                                {item.explanation}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
-                          Source: {item.source}
-                        </p>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          )}
-          <p className="border-t border-zinc-200 pt-3 text-[11px] text-zinc-400 dark:border-zinc-800">
-            AI-generated study aid. Verify important facts with course material.
-          </p>
-        </div>
-      ) : (
-        <div className="px-4 py-7 text-center">
-          <p className="mx-auto max-w-sm text-xs text-zinc-500 dark:text-zinc-400">
-            {loading
-              ? "Generating summary & practice questions…"
-              : "Enter your Gemini API key and click Generate reviewer."}
-          </p>
-        </div>
-      )}
+            <p className="border-t border-zinc-200 pt-3 text-[11px] text-zinc-400 dark:border-zinc-800">
+              AI-generated study aid. Verify important facts with course
+              material.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-zinc-200/90 bg-zinc-50/50 p-8 sm:p-10 text-center dark:border-zinc-800 dark:bg-zinc-900/30">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <h3 className="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Create your study reviewer
+            </h3>
+            <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              {loading
+                ? "Generating summary & practice questions…"
+                : apiKey
+                  ? "Select your options above and click Generate reviewer."
+                  : "Enter your Gemini API key and click Generate reviewer."}
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

@@ -328,8 +328,10 @@ test("study reviewer supports 3-stage width, simultaneous text+video selection, 
   await page.getByLabel("Gemini API key").fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
 
-  // Test simultaneous text + video selection (e.g. Lesson text + Video 1)
-  const textSourceBtn = page.getByRole("button", { name: /Lesson text/i });
+  // Test simultaneous text + video selection (e.g. Course PDF / Lesson text + Video 1)
+  const textSourceBtn = page.getByRole("button", {
+    name: /Course PDF|Lesson text/i,
+  });
   await expect(textSourceBtn).toHaveAttribute("aria-pressed", "true");
   const video1 = page.getByRole("button", { name: "Video 1", exact: true });
   await video1.click();
