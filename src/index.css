@@ -43,15 +43,25 @@ body {
 @media (min-width: 640px) {
   html[data-reviewer-stage="half"] {
     overflow: hidden;
+    height: 100dvh;
   }
   html[data-reviewer-stage="half"] body {
     overflow: hidden;
     height: 100dvh;
   }
+  html[data-reviewer-stage="half"] #root,
+  html[data-reviewer-stage="half"] #root > div {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
   html[data-reviewer-stage="half"] .app-main-layout {
     width: 50vw;
     max-width: 50vw;
     height: calc(100dvh - 3.5rem);
+    max-height: calc(100dvh - 3.5rem);
+    min-height: 0;
+    flex: 1 1 0%;
     overflow-y: auto;
     overscroll-behavior: contain;
   }

@@ -325,6 +325,18 @@ test("study reviewer supports 3-stage width, simultaneous text+video selection, 
     page.evaluate(() => document.documentElement.dataset.reviewerStage),
   ).resolves.toBe("half");
 
+  // Verify left side (course viewer) is independently scrollable in 50% split view
+  await page.mouse.move(200, 300);
+  await page.mouse.wheel(0, 300);
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => {
+        const main = document.querySelector(".app-main-layout") as HTMLElement;
+        return main ? main.scrollTop : 0;
+      });
+    })
+    .toBeGreaterThan(0);
+
   await page.getByLabel("Gemini API key").fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
 
