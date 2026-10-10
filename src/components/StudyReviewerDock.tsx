@@ -21,6 +21,7 @@ export function StudyReviewerDock({
   onTranscriptReady,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -30,6 +31,16 @@ export function StudyReviewerDock({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [open]);
+
+  const desktopWidthClass = !open
+    ? "sm:w-[50vw] sm:left-auto sm:right-0"
+    : isFullScreen
+      ? "sm:w-screen sm:left-0 sm:right-0"
+      : "sm:w-[50vw] sm:left-auto sm:right-0";
+
+  const mobileHeightClass = isFullScreen
+    ? "h-[calc(100dvh-3.5rem)]"
+    : "h-[min(84dvh,720px)]";
 
   return (
     <>
@@ -43,7 +54,7 @@ export function StudyReviewerDock({
       )}
       <aside
         aria-label="Study reviewer extension"
-        className={`no-print fixed inset-x-0 bottom-0 z-50 flex h-[min(84dvh,720px)] flex-col transition-transform duration-300 motion-reduce:transition-none sm:left-auto sm:right-0 sm:top-14 sm:h-[calc(100dvh-3.5rem)] sm:w-[min(440px,100vw)] sm:flex-row ${
+        className={`no-print fixed inset-x-0 bottom-0 z-50 flex ${mobileHeightClass} flex-col transition-[transform,width,height] duration-300 motion-reduce:transition-none sm:top-14 sm:h-[calc(100dvh-3.5rem)] ${desktopWidthClass} sm:flex-row ${
           open
             ? "translate-y-0 sm:translate-x-0"
             : "translate-y-[calc(100%-3rem)] sm:translate-y-0 sm:translate-x-[calc(100%-3rem)]"
@@ -93,6 +104,8 @@ export function StudyReviewerDock({
             pdfFile={pdfFile}
             youtubeUrl={youtubeUrl}
             youtubeUrls={youtubeUrls}
+            isFullScreen={isFullScreen}
+            onToggleFullScreen={() => setIsFullScreen((previous) => !previous)}
             onTranscriptReady={onTranscriptReady}
           />
         </div>

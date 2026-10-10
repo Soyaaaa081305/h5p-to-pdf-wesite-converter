@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import {
   BookOpenCheck,
   Check,
@@ -10,10 +10,11 @@ import {
   EyeOff,
   KeyRound,
   LoaderCircle,
+  Maximize2,
+  Minimize2,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
-  Upload,
-  Video,
 } from "lucide-react";
 import {
   checkGeminiApiKey,
@@ -21,8 +22,6 @@ import {
   getSavedGeminiApiKey,
   removeGeminiApiKey,
   saveGeminiApiKey,
-  transcribeAuthorizedMedia,
-  type TranscriptionProgress,
 } from "../lib/gemini";
 import type { GeneratedTranscript, StudyReview } from "../types/study";
 
@@ -33,6 +32,8 @@ interface Props {
   youtubeUrl?: string;
   youtubeUrls?: string[];
   compact?: boolean;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: () => void;
   onTranscriptReady?: (transcript: GeneratedTranscript) => void;
 }
 
@@ -92,12 +93,9 @@ export function StudyReviewer({
   youtubeUrl,
   youtubeUrls = [],
   compact = false,
-  onTranscriptReady,
+  isFullScreen = false,
+  onToggleFullScreen,
 }: Props) {
-  const mediaInput = useRef<HTMLInputElement>(null);
-  const nextTranscriptSource = useRef<
-    { name: string; youtubeUrl?: string } | undefined
-  >();
   const [questionCount, setQuestionCount] = useState(10);
   const [apiKey, setApiKey] = useState(() => getSavedGeminiApiKey());
   const [keyDraft, setKeyDraft] = useState(() => getSavedGeminiApiKey());
@@ -108,20 +106,15 @@ export function StudyReviewer({
   const [difficulty, setDifficulty] = useState<
     "introductory" | "standard" | "challenging"
   >("standard");
-  const [adultConfirmed, setAdultConfirmed] = useState(false);
-  const [consented, setConsented] = useState(false);
-  const [selectedYoutubeUrl, setSelectedYoutubeUrl] = useState(
-    youtubeUrl || "",
-  );
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [selectedYoutubeUrls, setSelectedYoutubeUrls] = useState<string[]>([]);
   const [review, setReview] = useState<StudyReview>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [answersVisible, setAnswersVisible] = useState(true);
   const [copied, setCopied] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [transcriptionStatus, setTranscriptionStatus] = useState("");
-  const [transcriptionError, setTranscriptionError] = useState("");
+
   const videoSources = Array.from(
     new Set(youtubeUrls.length ? youtubeUrls : youtubeUrl ? [youtubeUrl] : []),
   );
@@ -137,7 +130,8 @@ export function StudyReviewer({
         sourceText,
         questionCount,
         difficulty,
-        youtubeUrl: selectedYoutubeUrl,
+        youtubeUrls: selectedYoutubeUrls,
+        customPrompt: customPrompt.trim() ? customPrompt.trim() : undefined,
         pdfFile,
       });
       setReview(next);
@@ -198,48 +192,14 @@ export function StudyReviewer({
     setKeyFeedbackError(!removed);
   }
 
-  async function transcribeFile(file: File) {
-    const source = nextTranscriptSource.current;
-    nextTranscriptSource.current = undefined;
-    setTranscriptionError("");
-    setTranscriptionStatus("");
-    if (!apiKey || keyDraft.trim() !== apiKey) {
-      setTranscriptionError("Save your Gemini API key before transcribing.");
-      return;
-    }
-    if (!adultConfirmed || !consented) {
-      setTranscriptionError(
-        "Confirm the age and data-sharing notices before sending media to Google.",
-      );
-      return;
-    }
-    setTranscribing(true);
-    try {
-      const text = await transcribeAuthorizedMedia({
-        apiKey,
-        file,
-        onProgress: (progress: TranscriptionProgress) =>
-          setTranscriptionStatus(progress),
-      });
-      onTranscriptReady?.({
-        name: source?.name || `${file.name} transcript`,
-        text,
-        youtubeUrl: source?.youtubeUrl,
-      });
-      setTranscriptionStatus("");
-    } catch (caught) {
-      setTranscriptionError(friendlyError(caught));
-      setTranscriptionStatus("");
-    } finally {
-      setTranscribing(false);
-    }
+  function toggleVideo(url: string) {
+    setSelectedYoutubeUrls((prev) =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url],
+    );
   }
 
-  function chooseMedia(source?: { name: string; youtubeUrl?: string }) {
-    setTranscriptionError("");
-    setTranscriptionStatus("");
-    nextTranscriptSource.current = source;
-    mediaInput.current?.click();
+  function selectTextOnly() {
+    setSelectedYoutubeUrls([]);
   }
 
   async function copy() {
@@ -254,6 +214,15 @@ export function StudyReviewer({
     }
   }
 
+  const isTextOnly = selectedYoutubeUrls.length === 0;
+  const canGenerate =
+    Boolean(apiKey) &&
+    keyDraft.trim() === apiKey &&
+    !loading &&
+    (Boolean(sourceText.trim()) ||
+      Boolean(pdfFile) ||
+      selectedYoutubeUrls.length > 0);
+
   return (
     <section
       id="study-reviewer"
@@ -263,20 +232,6 @@ export function StudyReviewer({
           : "my-8 rounded-2xl border border-zinc-200 shadow-sm dark:border-zinc-800"
       }`}
     >
-      <input
-        ref={mediaInput}
-        type="file"
-        accept="audio/*,video/*,.aac,.aiff,.flac,.m4a,.mkv,.mov,.mp3,.mp4,.oga,.ogg,.opus,.wav,.webm,.wma,.wmv"
-        className="sr-only"
-        tabIndex={-1}
-        aria-label="Choose an authorized audio or video file to transcribe"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) void transcribeFile(file);
-          else nextTranscriptSource.current = undefined;
-        }}
-      />
       <div className="border-b border-zinc-200 bg-zinc-50/70 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6 sm:py-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -287,51 +242,74 @@ export function StudyReviewer({
               Study Reviewer
             </h2>
           </div>
-          {review && (
-            <div className="no-print flex flex-wrap items-center gap-2">
+          <div className="no-print flex flex-wrap items-center gap-2">
+            {onToggleFullScreen && (
               <button
                 type="button"
-                onClick={() => setAnswersVisible((visible) => !visible)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-700"
+                onClick={onToggleFullScreen}
+                aria-label={isFullScreen ? "50% view" : "Full screen"}
+                title={isFullScreen ? "50% view" : "Full screen"}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
               >
-                <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform ${answersVisible ? "rotate-180" : ""}`}
-                />
-                {answersVisible ? "Hide answers" : "Show answers"}
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-3 py-2 text-xs font-semibold hover:opacity-90"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Save as PDF
-              </button>
-              <button
-                type="button"
-                onClick={copy}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-700"
-              >
-                {copied ? (
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                {isFullScreen ? (
+                  <>
+                    <Minimize2 className="h-3.5 w-3.5" />
+                    <span>50% view</span>
+                  </>
                 ) : (
-                  <Clipboard className="h-3.5 w-3.5" />
+                  <>
+                    <Maximize2 className="h-3.5 w-3.5" />
+                    <span>Full screen</span>
+                  </>
                 )}
-                Copy
               </button>
-            </div>
-          )}
+            )}
+            {review && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setAnswersVisible((visible) => !visible)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${answersVisible ? "rotate-180" : ""}`}
+                  />
+                  {answersVisible ? "Hide answers" : "Show answers"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-zinc-100 dark:text-zinc-900"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Save as PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={copy}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                >
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : (
+                    <Clipboard className="h-3.5 w-3.5" />
+                  )}
+                  Copy
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="no-print mt-5 max-w-3xl">
+        <div className="no-print mt-5">
           <label
             htmlFor="gemini-api-key"
             className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
           >
             Gemini API key
           </label>
-          <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
-            <div className="relative min-w-0 flex-1">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <div className="relative min-w-[200px] flex-1">
               <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
                 id="gemini-api-key"
@@ -344,7 +322,7 @@ export function StudyReviewer({
                 autoComplete="off"
                 spellCheck={false}
                 placeholder="Paste your Gemini API key"
-                className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-10 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800"
+                className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-10 text-xs outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 sm:text-sm"
               />
               <button
                 type="button"
@@ -359,34 +337,36 @@ export function StudyReviewer({
                 )}
               </button>
             </div>
-            <button
-              type="button"
-              onClick={saveKey}
-              disabled={!keyDraft.trim()}
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-3.5 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-            >
-              Save key
-            </button>
-            <button
-              type="button"
-              onClick={testKey}
-              disabled={!keyDraft.trim() || checkingKey}
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-            >
-              {checkingKey && (
-                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-              )}
-              {checkingKey ? "Checking" : "Test key"}
-            </button>
-            {apiKey && (
+            <div className="flex shrink-0 items-center gap-2">
               <button
                 type="button"
-                onClick={clearKey}
-                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                onClick={saveKey}
+                disabled={!keyDraft.trim()}
+                className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-3.5 text-xs font-semibold text-white transition hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-45 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               >
-                <Trash2 className="h-3.5 w-3.5" /> Remove
+                Save key
               </button>
-            )}
+              <button
+                type="button"
+                onClick={testKey}
+                disabled={!keyDraft.trim() || checkingKey}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-45 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+              >
+                {checkingKey && (
+                  <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                )}
+                {checkingKey ? "Checking" : "Test key"}
+              </button>
+              {apiKey && (
+                <button
+                  type="button"
+                  onClick={clearKey}
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Remove
+                </button>
+              )}
+            </div>
           </div>
           {keyFeedback && (
             <p
@@ -401,7 +381,7 @@ export function StudyReviewer({
               href="https://aistudio.google.com/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 underline underline-offset-2"
+              className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-400"
             >
               Get API key from Google AI Studio
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -409,43 +389,38 @@ export function StudyReviewer({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 no-print">
-          <select
-            value={questionCount}
-            onChange={(event) => setQuestionCount(Number(event.target.value))}
-            className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-xs font-medium text-zinc-700 dark:text-zinc-300"
-            aria-label="Number of questions"
-          >
-            {[5, 10, 15].map((count) => (
-              <option key={count} value={count}>
-                {count} questions
-              </option>
-            ))}
-          </select>
-          <select
-            value={difficulty}
-            onChange={(event) =>
-              setDifficulty(event.target.value as typeof difficulty)
-            }
-            className="h-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-xs font-medium text-zinc-700 dark:text-zinc-300"
-            aria-label="Difficulty"
-          >
-            <option value="introductory">Introductory</option>
-            <option value="standard">Standard</option>
-            <option value="challenging">Challenging</option>
-          </select>
+        <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={questionCount}
+              onChange={(event) => setQuestionCount(Number(event.target.value))}
+              className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              aria-label="Number of questions"
+            >
+              {[5, 10, 15, 20].map((count) => (
+                <option key={count} value={count}>
+                  {count} questions
+                </option>
+              ))}
+            </select>
+            <select
+              value={difficulty}
+              onChange={(event) =>
+                setDifficulty(event.target.value as typeof difficulty)
+              }
+              className="h-9 rounded-xl border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+              aria-label="Difficulty"
+            >
+              <option value="introductory">Introductory</option>
+              <option value="standard">Standard</option>
+              <option value="challenging">Challenging</option>
+            </select>
+          </div>
           <button
             type="button"
             onClick={generate}
-            disabled={
-              !apiKey ||
-              keyDraft.trim() !== apiKey ||
-              !adultConfirmed ||
-              !consented ||
-              loading ||
-              (!sourceText.trim() && !pdfFile && !selectedYoutubeUrl)
-            }
-            className="ml-auto inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white shadow-xs hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            disabled={!canGenerate}
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-xs font-bold text-white shadow-xs transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
             {loading ? (
               <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
@@ -460,155 +435,87 @@ export function StudyReviewer({
           </button>
         </div>
 
-        <div className="mt-3 space-y-1.5 no-print text-xs text-zinc-600 dark:text-zinc-400">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={adultConfirmed}
-              onChange={(event) => setAdultConfirmed(event.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700"
+        <details className="group no-print mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+          <summary className="flex cursor-pointer select-none items-center gap-1.5 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
+            <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-400 transition-colors group-open:text-indigo-600 dark:group-open:text-indigo-400" />
+            <span>Custom prompt & instructions (optional)</span>
+          </summary>
+          <div className="pt-2">
+            <textarea
+              value={customPrompt}
+              onChange={(event) => setCustomPrompt(event.target.value)}
+              rows={3}
+              placeholder="e.g. Focus on chapter 2, create 8 questions with detailed multiple-choice explanations, prioritize key dates and definitions..."
+              className="w-full rounded-xl border border-zinc-200 bg-white p-2.5 text-xs text-zinc-800 placeholder-zinc-400 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:placeholder-zinc-500"
             />
-            <span>I am 18 or older</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={consented}
-              onChange={(event) => setConsented(event.target.checked)}
-              className="h-3.5 w-3.5 rounded border-zinc-300 text-zinc-900 focus:ring-0 dark:border-zinc-700"
-            />
-            <span>I agree to send selected content to Google Gemini</span>
-          </label>
-        </div>
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Appended to Gemini instructions to customize question count,
+              topics, or difficulty.
+            </p>
+          </div>
+        </details>
 
         {videoSources.length > 0 && (
           <div className="no-print mt-3.5 border-t border-zinc-200/80 pt-3 dark:border-zinc-800/80">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-              Include video in review
-            </p>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                Include video in review
+              </p>
+              {selectedYoutubeUrls.length > 0 && (
+                <span className="text-[11px] font-medium text-indigo-600 dark:text-indigo-400">
+                  {selectedYoutubeUrls.length} selected
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                aria-pressed={!selectedYoutubeUrl}
-                onClick={() => setSelectedYoutubeUrl("")}
+                aria-pressed={isTextOnly}
+                onClick={selectTextOnly}
                 className={`min-h-8 touch-manipulation rounded-lg border px-3 text-xs font-medium transition-colors ${
-                  !selectedYoutubeUrl
+                  isTextOnly
                     ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                     : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                 }`}
               >
                 Text only
               </button>
-              {videoSources.map((url, index) => (
-                <div key={url} className="inline-flex items-center">
-                  <button
-                    type="button"
-                    aria-pressed={selectedYoutubeUrl === url}
-                    onClick={() => setSelectedYoutubeUrl(url)}
-                    className={`min-h-8 touch-manipulation rounded-l-lg border px-3 text-xs font-medium transition-colors ${
-                      selectedYoutubeUrl === url
-                        ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
-                        : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
-                    }`}
-                  >
-                    Video {index + 1}
-                  </button>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Open video ${index + 1} on YouTube`}
-                    title="Watch on YouTube"
-                    className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                </div>
-              ))}
+              {videoSources.map((url, index) => {
+                const isSelected = selectedYoutubeUrls.includes(url);
+                return (
+                  <div key={url} className="inline-flex items-center">
+                    <button
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => toggleVideo(url)}
+                      className={`min-h-8 touch-manipulation rounded-l-lg border px-3 text-xs font-medium transition-colors ${
+                        isSelected
+                          ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                      }`}
+                    >
+                      Video {index + 1}
+                    </button>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open video ${index + 1} on YouTube`}
+                      title="Watch on YouTube"
+                      className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-r-lg border border-l-0 border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
-
-        <details
-          className="no-print mt-3 text-xs text-zinc-500"
-          open={transcribing || !!transcriptionStatus || !!transcriptionError}
-        >
-          <summary className="flex min-h-7 cursor-pointer touch-manipulation list-none items-center gap-1.5 font-medium hover:text-zinc-800 dark:hover:text-zinc-200 marker:hidden [&::-webkit-details-marker]:hidden">
-            <Video className="h-3.5 w-3.5 text-zinc-400" />
-            Transcribe an audio/video file
-          </summary>
-          <div className="pt-2">
-            {videoSources.length > 0 ? (
-              <ul className="space-y-1.5">
-                {videoSources.map((url, index) => (
-                  <li
-                    key={url}
-                    className="flex items-center justify-between gap-3 text-xs"
-                  >
-                    <span className="text-zinc-600 dark:text-zinc-300">
-                      Video {index + 1}
-                    </span>
-                    <button
-                      type="button"
-                      aria-label={`Choose a local copy to transcribe for video ${index + 1}`}
-                      onClick={() =>
-                        chooseMedia({
-                          name: `${title} — video ${index + 1} transcript`,
-                          youtubeUrl: url,
-                        })
-                      }
-                      disabled={
-                        !apiKey ||
-                        keyDraft.trim() !== apiKey ||
-                        !adultConfirmed ||
-                        !consented ||
-                        transcribing
-                      }
-                      className="inline-flex min-h-8 shrink-0 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                    >
-                      <Upload className="h-3.5 w-3.5" /> Choose file
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <button
-                type="button"
-                onClick={() => chooseMedia()}
-                disabled={
-                  !apiKey ||
-                  keyDraft.trim() !== apiKey ||
-                  !adultConfirmed ||
-                  !consented ||
-                  transcribing
-                }
-                className="inline-flex min-h-8 touch-manipulation items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-              >
-                <Upload className="h-3.5 w-3.5" /> Choose file
-              </button>
-            )}
-            {transcriptionStatus && (
-              <p
-                role="status"
-                className="mt-2 text-xs text-zinc-600 dark:text-zinc-300"
-              >
-                {transcriptionStatus}
-              </p>
-            )}
-            {transcriptionError && (
-              <p
-                role="alert"
-                className="mt-2 text-xs text-rose-700 dark:text-rose-300"
-              >
-                {transcriptionError}
-              </p>
-            )}
-          </div>
-        </details>
       </div>
 
       {(error || message) && (
-        <div className="no-print px-5 sm:px-7 pt-4">
+        <div className="no-print px-5 pt-4 sm:px-7">
           {error && (
             <p
               role="alert"
@@ -629,9 +536,9 @@ export function StudyReviewer({
       )}
 
       {review ? (
-        <div className="px-5 py-6 sm:px-7 sm:py-8 space-y-8">
+        <div className="space-y-8 px-5 py-6 sm:px-7 sm:py-8">
           <article>
-            <p className="text-xs uppercase tracking-[0.16em] font-bold text-indigo-600 dark:text-indigo-300">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
               Study summary
             </p>
             <h3 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -651,7 +558,7 @@ export function StudyReviewer({
                 {review.keyPoints.map((point, index) => (
                   <li
                     key={`${index}-${point.slice(0, 24)}`}
-                    className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:text-zinc-300"
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
                   >
                     <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-300">
                       {String(index + 1).padStart(2, "0")}
@@ -672,7 +579,7 @@ export function StudyReviewer({
                 {review.terms.map((term, index) => (
                   <article
                     key={`${index}-${term.term}`}
-                    className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4"
+                    className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800"
                   >
                     <h4 className="font-bold text-zinc-900 dark:text-zinc-100">
                       {term.term}
@@ -697,10 +604,10 @@ export function StudyReviewer({
               {review.questions.map((item, index) => (
                 <article
                   key={`${index}-${item.question.slice(0, 28)}`}
-                  className="break-inside-avoid rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 sm:p-5"
+                  className="break-inside-avoid rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
                 >
                   <div className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-xs font-bold text-indigo-700 dark:text-indigo-300">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -708,7 +615,7 @@ export function StudyReviewer({
                         {item.question}
                       </p>
                       {item.options.length > 0 && (
-                        <ol className="mt-2 space-y-1 pl-5 list-[upper-alpha] text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                        <ol className="mt-2 list-[upper-alpha] space-y-1 pl-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
                           {item.options.map((option, optionIndex) => (
                             <li key={`${optionIndex}-${option.slice(0, 20)}`}>
                               {option}
@@ -717,7 +624,7 @@ export function StudyReviewer({
                         </ol>
                       )}
                       {answersVisible && (
-                        <div className="mt-3 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+                        <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
                           <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
                             Answer:{" "}
                             <span className="font-normal">{item.answer}</span>
@@ -738,7 +645,7 @@ export function StudyReviewer({
               ))}
             </div>
           </section>
-          <p className="border-t border-zinc-200 dark:border-zinc-800 pt-3 text-[11px] text-zinc-400">
+          <p className="border-t border-zinc-200 pt-3 text-[11px] text-zinc-400 dark:border-zinc-800">
             AI-generated study aid. Verify important facts with course material.
           </p>
         </div>

@@ -189,9 +189,6 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
     page.getByText("Key works with the selected Gemini model."),
   ).toBeVisible();
 
-  const reviewer = page.locator("#study-reviewer");
-  await reviewer.locator('input[type="checkbox"]').nth(0).check();
-  await reviewer.locator('input[type="checkbox"]').nth(1).check();
   const videoButton = page.getByRole("button", {
     name: "Video 1",
     exact: true,
@@ -202,42 +199,34 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   await expect(generateButton).toBeEnabled();
 });
 
-test("an H5P video can be transcribed from an authorized local copy", async ({
+test("study reviewer supports multi-video selection, custom prompt, and full screen toggle", async ({
   page,
 }) => {
-  const requests = stubGeminiMediaApi(page);
-
   await page.goto("/");
   await upload(page, await archive());
   await page.getByRole("button", { name: "Open Summary & reviewer" }).click();
   await page.getByLabel("Gemini API key").fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
-  const reviewer = page.locator("#study-reviewer");
-  await reviewer.locator('input[type="checkbox"]').nth(0).check();
-  await reviewer.locator('input[type="checkbox"]').nth(1).check();
-  await reviewer.getByText("Transcribe an audio/video file").click();
 
-  const picker = page.waitForEvent("filechooser");
-  await page
-    .getByRole("button", {
-      name: "Choose a local copy to transcribe for video 1",
-    })
-    .click();
-  await (
-    await picker
-  ).setFiles({
-    name: "lecture.mp4",
-    mimeType: "video/mp4",
-    buffer: Buffer.from("sample media"),
-  });
+  const video1 = page.getByRole("button", { name: "Video 1", exact: true });
+  await video1.click();
+  await expect(video1).toHaveAttribute("aria-pressed", "true");
 
-  await expect(
-    page.getByRole("heading", { name: "Synthetic Book — video 1 transcript" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("[00:00] This is the verified lesson transcript."),
-  ).toBeVisible();
-  expect(requests.some((request) => request.startsWith("DELETE "))).toBe(true);
+  const customPromptSummary = page.getByText(
+    "Custom prompt & instructions (optional)",
+  );
+  await expect(customPromptSummary).toBeVisible();
+  await customPromptSummary.click();
+  const promptInput = page.getByPlaceholder(/Focus on chapter 2/i);
+  await expect(promptInput).toBeVisible();
+  await promptInput.fill("Create 5 questions focusing on key terms");
+
+  const fullScreenButton = page.getByRole("button", { name: "Full screen" });
+  await expect(fullScreenButton).toBeVisible();
+  await fullScreenButton.click();
+  await expect(page.getByRole("button", { name: "50% view" })).toBeVisible();
+  await page.getByRole("button", { name: "50% view" }).click();
+  await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
 });
 
 test("reviewer dock and upload area stay usable at Android phone width", async ({
@@ -288,53 +277,30 @@ test("reviewer dock and upload area stay usable at Android phone width", async (
   await expect(
     page.getByRole("button", { name: "Collapse Summary & reviewer" }),
   ).toHaveAttribute("aria-expanded", "true");
-  const mobileRequests = stubGeminiMediaApi(page);
   await page.getByLabel("Gemini API key").fill("mobile-test-key");
   await page.getByRole("button", { name: "Save key" }).tap();
   const mobileReviewer = page.locator("#study-reviewer");
-  await mobileReviewer.locator('input[type="checkbox"]').nth(0).check();
-  await mobileReviewer.locator('input[type="checkbox"]').nth(1).check();
-  await mobileReviewer.getByText("Transcribe an audio/video file").tap();
-  const mediaPicker = page.waitForEvent("filechooser");
-  await page
-    .getByRole("button", {
-      name: "Choose a local copy to transcribe for video 1",
-    })
-    .tap();
-  await (
-    await mediaPicker
-  ).setFiles({
-    name: "mobile-lesson.mp4",
-    mimeType: "video/mp4",
-    buffer: Buffer.from("sample media"),
-  });
-  await expect(
-    page.getByRole("heading", { name: "Synthetic Book — video 1 transcript" }),
-  ).toBeVisible();
-  await expect(
-    page.getByText("[00:00] This is the verified lesson transcript."),
-  ).toBeVisible();
-  expect(
-    mobileRequests.some((request: string) => request.startsWith("DELETE ")),
-  ).toBe(true);
+  await expect(mobileReviewer).toBeVisible();
+  const video1 = page.getByRole("button", { name: "Video 1", exact: true });
+  await video1.tap();
+  await expect(video1).toHaveAttribute("aria-pressed", "true");
+
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
 
+  const collapseButton = page.getByRole("button", {
+    name: "Collapse Summary & reviewer",
+  });
+  await collapseButton.tap();
   await expect(
     page.getByRole("button", { name: "Open Summary & reviewer" }),
   ).toHaveAttribute("aria-expanded", "false");
 
   await page
     .getByRole("button", { name: "Remove Synthetic Book", exact: true })
-    .tap();
-  await page
-    .getByRole("button", {
-      name: "Remove Synthetic Book — video 1 transcript",
-      exact: true,
-    })
     .tap();
   await page.locator("#h5p-files").setInputFiles({
     name: "lesson.txt",
