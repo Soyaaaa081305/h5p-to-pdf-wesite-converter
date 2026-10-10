@@ -22,11 +22,59 @@ export function StudyReviewerDock({
   onTranscriptReady,
 }: Props) {
   const [stage, setStage] = useState<ReviewerStage>("closed");
+  const [direction, setDirection] = useState<"forward" | "backward">("forward");
+
+  const stepUp = () => {
+    setStage((current) => {
+      if (current === "closed") {
+        setDirection("forward");
+        return "compact";
+      }
+      if (current === "compact") {
+        setDirection("forward");
+        return "half";
+      }
+      if (current === "half") {
+        setDirection("backward");
+        return "full";
+      }
+      return "full";
+    });
+  };
+
+  const stepDown = () => {
+    setStage((current) => {
+      if (current === "full") {
+        setDirection("backward");
+        return "half";
+      }
+      if (current === "half") {
+        setDirection("backward");
+        return "compact";
+      }
+      if (current === "compact") {
+        setDirection("forward");
+        return "closed";
+      }
+      return "closed";
+    });
+  };
+
+  const handleSetStage = (next: ReviewerStage) => {
+    setStage(next);
+    if (next === "full") {
+      setDirection("backward");
+    } else if (next === "closed") {
+      setDirection("forward");
+    }
+  };
 
   useEffect(() => {
     if (stage === "closed") return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setStage("closed");
+      if (event.key === "Escape") {
+        stepDown();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
@@ -34,23 +82,53 @@ export function StudyReviewerDock({
 
   const isOpen = stage !== "closed";
 
-  // Clicking the vertical "STUDY GUIDE" tab handle advances:
-  // On mobile (< 640px): Closed <-> Open
-  // On desktop (>= 640px): Closed -> Stage 1: Compact (20-30%) -> Stage 2: 50% -> Closed
+  // Clicking the vertical "STUDY GUIDE" tab handle advances sequentially:
+  // On mobile (< 640px): Closed <-> Open (Half)
+  // On desktop (>= 640px):
+  //   Forward expansion:  Closed (0) -> Compact (1: 30%) -> Half (2: 50%) -> Full screen (3: 100%)
+  //   Sequential collapse: Full screen (3) -> Half (2: 50%) -> Compact (1: 30%) -> Closed (0)
   const handleTabClick = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 640) {
+      setStage((current) => (current === "closed" ? "half" : "closed"));
+      return;
+    }
     setStage((current) => {
-      if (typeof window !== "undefined" && window.innerWidth < 640) {
-        return current === "closed" ? "half" : "closed";
+      if (current === "closed") {
+        setDirection("forward");
+        return "compact";
       }
-      if (current === "closed") return "compact";
-      if (current === "compact") return "half";
+      if (current === "full") {
+        setDirection("backward");
+        return "half";
+      }
+      if (current === "half") {
+        if (direction === "forward") {
+          setDirection("backward");
+          return "full";
+        }
+        setDirection("backward");
+        return "compact";
+      }
+      // current === "compact"
+      if (direction === "forward") {
+        setDirection("forward");
+        return "half";
+      }
+      setDirection("forward");
       return "closed";
     });
   };
 
   // Toggle full screen from the reviewer header:
   const handleToggleFullScreen = () => {
-    setStage((current) => (current === "full" ? "half" : "full"));
+    setStage((current) => {
+      if (current === "full") {
+        setDirection("backward");
+        return "half";
+      }
+      setDirection("backward");
+      return "full";
+    });
   };
 
   // On desktop, keep `sm:right-0 sm:left-auto` pinned to the right edge at all times.
@@ -94,8 +172,14 @@ export function StudyReviewerDock({
             stage === "closed"
               ? "Open reviewer (Stage 1: 30%)"
               : stage === "compact"
-                ? "Expand reviewer to 50% (Stage 2)"
-                : "Collapse reviewer"
+                ? direction === "forward"
+                  ? "Expand reviewer to 50% (Stage 2)"
+                  : "Collapse reviewer"
+                : stage === "half"
+                  ? direction === "forward"
+                    ? "Expand reviewer to Full screen (Stage 3)"
+                    : "Collapse reviewer to 30% (Stage 1)"
+                  : "Collapse reviewer to 50% (Stage 2)"
           }
           onClick={handleTabClick}
           className="flex h-12 min-h-12 w-full shrink-0 touch-manipulation items-center justify-between rounded-t-2xl border border-zinc-200 bg-white px-4 text-zinc-700 shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/30 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 sm:h-full sm:w-12 sm:flex-col sm:justify-center sm:gap-3 sm:rounded-l-xl sm:rounded-tr-none sm:px-0 sm:py-4"
@@ -109,7 +193,9 @@ export function StudyReviewerDock({
           <span className="hidden sm:contents">
             <ChevronLeft
               aria-hidden="true"
-              className={`h-4 w-4 transition-transform ${stage === "half" || stage === "full" ? "rotate-180" : ""}`}
+              className={`h-4 w-4 transition-transform ${
+                direction === "backward" || stage === "full" ? "rotate-180" : ""
+              }`}
             />
             <LogoMark size={20} />
             <span className="rotate-180 text-[11px] font-semibold uppercase tracking-[0.14em] [writing-mode:vertical-rl]">
@@ -134,7 +220,10 @@ export function StudyReviewerDock({
             youtubeUrl={youtubeUrl}
             youtubeUrls={youtubeUrls}
             stage={stage}
-            onSetStage={setStage}
+            onSetStage={handleSetStage}
+            onStepUp={stepUp}
+            onStepDown={stepDown}
+            onClose={() => setStage("closed")}
             isFullScreen={stage === "full"}
             onToggleFullScreen={handleToggleFullScreen}
             onTranscriptReady={onTranscriptReady}

@@ -58,9 +58,10 @@ Phase 2: Component Consistency & Flow Audit
       * Verify dedicated PDF generation (`reviewerPdfExporter.ts`) and rich clipboard copying.
     - `src/components/StudyReviewerDock.tsx`:
       * Verify the 3-stage width lifecycle:
-        Stage 1: Compact (20-30% width)
-        Stage 2: 50% width
+        Stage 1: Compact (30% width)
+        Stage 2: Split (50% width)
         Stage 3: Full screen (100% width)
+      * Sequential Expand: 0 -> 1 -> 2 -> 3; Sequential Collapse: 3 -> 2 -> 1 -> 0 (50% first, then 30%, then 0)
       * Ensure right-to-left expansion is maintained by strictly pinning `sm:right-0 sm:left-auto`.
     - `src/lib/reviewerPdfExporter.ts`:
       * Validate typography, margins, page breaks, and show/hide answer logic.

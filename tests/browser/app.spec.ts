@@ -280,6 +280,47 @@ test("study reviewer supports 3-stage width, simultaneous text+video selection, 
 
   await page.getByRole("button", { name: "50% view" }).click();
   await expect(page.getByRole("button", { name: "Full screen" })).toBeVisible();
+
+  // Test sequential collapse: Stage 2 (50%) -> Stage 1 (~30%) -> Stage 0 (closed)
+  // Step down from 50% to 30% via tab handle
+  await tabHandle.click();
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      if (!bounds) return -1;
+      const widthRatio = bounds.width / clientWidth;
+      return widthRatio > 0.2 && widthRatio < 0.45;
+    })
+    .toBe(true);
+
+  // Step down from 30% to 0 (closed) via tab handle
+  await tabHandle.click();
+  await expect(
+    page.getByRole("button", { name: "Open Summary & reviewer" }),
+  ).toBeVisible();
+
+  // Test sequential collapse from full screen: Open -> expand to Full -> collapse goes to 50% first
+  await page.getByRole("button", { name: "Open Summary & reviewer" }).click();
+  // Use header segmented control to jump to Full screen
+  await page.getByRole("button", { name: "Full", exact: true }).click();
+  await expect(page.getByRole("button", { name: "50% view" })).toBeVisible();
+
+  // Clicking tab handle when in Full screen collapses to 50% (Stage 2) first, NOT to 0
+  await tabHandle.click();
+  await expect
+    .poll(async () => {
+      const bounds = await dock.boundingBox();
+      const clientWidth = await page.evaluate(
+        () => document.documentElement.clientWidth,
+      );
+      if (!bounds) return -1;
+      const widthRatio = bounds.width / clientWidth;
+      return Math.abs(widthRatio - 0.5) < 0.05;
+    })
+    .toBe(true);
 });
 
 test("reviewer dock and upload area stay usable at Android phone width", async ({
