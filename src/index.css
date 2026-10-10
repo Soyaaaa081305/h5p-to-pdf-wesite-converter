@@ -30,6 +30,7 @@ html {
   min-width: 320px;
   min-height: 100%;
   background: #faf7ef;
+  overflow-y: scroll;
 }
 
 body {

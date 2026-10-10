@@ -1,0 +1,83 @@
+================================================================================
+SENIOR DEVELOPER REFACTORING & OPTIMIZATION PLAN
+H5P to PDF Website & AI Study Reviewer
+================================================================================
+
+1. ISSUE DIAGNOSIS & ROOT CAUSE ANALYSIS
+--------------------------------------------------------------------------------
+1.1 Page & Header Shift on Navigation (/ -> /terms, /privacy):
+    - Symptom: When navigating from the Home page to Terms or Privacy, the header,
+      logo, buttons, and content visibly shift to the left; navigating back shifts
+      them to the right.
+    - Root Cause: Classic browser scrollbar layout shift. On Home, content fits
+      inside 100vh, so Windows browsers render no scrollbar (client width = full
+      viewport). On Terms/Privacy, content exceeds 100vh, causing Windows Chromium
+      to render a 15-17px vertical scrollbar on the right. Because `.max-w-7xl.mx-auto`
+      centers within the client width, the midpoint shifts left by ~8.5px.
+    - Solution:
+      * Add `scrollbar-gutter: stable;` and `overflow-y: scroll;` to `html` in `src/index.css`.
+      * Add sleek, modern custom scrollbar styling with a transparent track so the
+        permanent track is visually seamless in both light and dark mode.
+      * Result: The client width is identical on all pages, completely eliminating
+        any layout shift or jumping.
+
+1.2 Redundancy & Flow Audit:
+    - Verify that no dead files, duplicate utility functions, or unused variables exist.
+    - Standardize branding: Ensure `<LogoMark />` from `src/components/Logo.tsx` is
+      the single source of truth for the app logo across Header, Study Reviewer,
+      and Study Reviewer Dock.
+    - Verify data flow between `App.tsx`, `StudyReviewerDock.tsx`, and `StudyReviewer.tsx`:
+      Ensure the 3-stage width lifecycle, source selection (Course text/PDF + videos),
+      custom prompt overrides, and direct PDF download flow seamlessly.
+    - Verify clipboard copying: Ensure rich HTML and clean Markdown copy works smoothly
+      with reliable fallbacks for all browsers.
+    - Verify question limits in `src/lib/gemini.ts`: Ensure user question choices (5, 10,
+      15, 20, 25) and custom prompt overrides are preserved without arbitrary truncations.
+
+2. MULTI-PASS IMPLEMENTATION PHASES
+--------------------------------------------------------------------------------
+Phase 1: Layout Stability & Scrollbar Modernization
+    - Update `src/index.css`:
+      * Apply `overflow-y: scroll;` and `scrollbar-gutter: stable;` to `html`.
+      * Add clean WebKit/Firefox scrollbar rules for elegant styling across all themes.
+    - Verify alignment across Home (`/`), Privacy (`/privacy`), Terms (`/terms`),
+      and Viewer modes.
+
+Phase 2: Component Consistency & Flow Audit
+    - `src/components/Header.tsx`:
+      * Ensure pixel-perfect sticky alignment, accessible keyboard navigation, and
+        clean link handling.
+    - `src/components/PolicyPage.tsx`:
+      * Verify smooth client-side navigation back to Home without hard refresh.
+    - `src/components/SiteFooter.tsx`:
+      * Ensure router navigation and accessible external links.
+    - `src/components/StudyReviewer.tsx`:
+      * Verify brand logo integration (`LogoMark`).
+      * Verify source selection state (text/PDF + multi-video simultaneous selection).
+      * Verify question count selection (up to 25) and custom prompt priority.
+      * Verify dedicated PDF generation (`reviewerPdfExporter.ts`) and rich clipboard copying.
+    - `src/components/StudyReviewerDock.tsx`:
+      * Verify the 3-stage width lifecycle:
+        Stage 1: Compact (20-30% width)
+        Stage 2: 50% width
+        Stage 3: Full screen (100% width)
+      * Ensure right-to-left expansion is maintained by strictly pinning `sm:right-0 sm:left-auto`.
+    - `src/lib/reviewerPdfExporter.ts`:
+      * Validate typography, margins, page breaks, and show/hide answer logic.
+
+Phase 3: Automated Testing & Verification
+    - Execute `npm run format:check` to ensure 100% Prettier compliance.
+    - Execute `npm run test` (Vitest unit tests) to verify all extraction, archive,
+      security, and Gemini client tests.
+    - Execute `npm run build` (TypeScript compiler + Vite) to confirm zero type errors.
+    - Execute `npm run test:e2e` (Playwright) to verify all 15 browser tests, including
+      header stability across routes, 3-stage dock resizing, and file operations.
+
+Phase 4: Deployment & Release
+    - Review `git diff` for cleanliness.
+    - Commit under author `Soyaaaa081305 <isaiahandreinoda@gmail.com>`.
+    - Push to remote `origin codex/firebase-ai-reviewer`.
+    - Deploy to Firebase Hosting project `h5p-study-reviewer`.
+    - Validate live URL: `https://h5p-to-pdf-converter.web.app`.
+
+================================================================================
