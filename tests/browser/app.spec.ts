@@ -174,13 +174,64 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   });
   await expect(generateButton).toBeDisabled();
 
-  await page.route("https://generativelanguage.googleapis.com/**", (route) =>
-    route.fulfill({
+  await page.route("https://generativelanguage.googleapis.com/**", (route) => {
+    if (route.request().url().includes(":generateContent")) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: "Data Classification Study Guide",
+                      summary:
+                        "This is paragraph 1 of the comprehensive summary.\n\nThis is paragraph 2 covering categorical vs numerical data.",
+                      keyPoints: [
+                        "Data can be qualitative or quantitative.",
+                        "Nominal data has no natural order.",
+                      ],
+                      terms: [
+                        {
+                          term: "Discrete variable",
+                          definition: "A variable with countable values.",
+                          source: "Slide 4",
+                        },
+                      ],
+                      questions: [
+                        {
+                          type: "multiple_choice",
+                          question:
+                            "Which of the following is a continuous variable?",
+                          options: [
+                            "Number of cars",
+                            "Height in centimeters",
+                            "Number of students",
+                            "Shoe size",
+                          ],
+                          answer: "Height in centimeters",
+                          explanation:
+                            "Height can take any value along a continuum.",
+                          source: "Slide 8",
+                        },
+                      ],
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      });
+    }
+    return route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({ name: "models/gemini-3.8-flash" }),
-    }),
-  );
+    });
+  });
   await keyInput.fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
   await expect(page.getByText("Key saved in this browser.")).toBeVisible();
@@ -197,6 +248,35 @@ test("reviewer saves and checks a personal Gemini key", async ({ page }) => {
   await videoButton.click();
   await expect(videoButton).toHaveAttribute("aria-pressed", "true");
   await expect(generateButton).toBeEnabled();
+
+  // Test full generation with study summary and questions
+  await generateButton.click();
+  await expect(
+    page.getByRole("heading", { name: "Data Classification Study Guide" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("This is paragraph 1 of the comprehensive summary."),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      "This is paragraph 2 covering categorical vs numerical data.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Which of the following is a continuous variable?"),
+  ).toBeVisible();
+
+  // Test view section tabs
+  await page.getByRole("button", { name: "Study summary" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Key ideas" }),
+  ).not.toBeVisible();
+  await page.getByRole("button", { name: /Questions/i }).click();
+  await expect(
+    page.getByText("Which of the following is a continuous variable?"),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "All sections" }).click();
+  await expect(page.getByRole("heading", { name: "Key ideas" })).toBeVisible();
 });
 
 test("study reviewer supports 3-stage width, simultaneous text+video selection, and custom prompt", async ({
@@ -241,6 +321,9 @@ test("study reviewer supports 3-stage width, simultaneous text+video selection, 
       return Math.abs(widthRatio - 0.5) < 0.05;
     })
     .toBe(true);
+  await expect(
+    page.evaluate(() => document.documentElement.dataset.reviewerStage),
+  ).resolves.toBe("half");
 
   await page.getByLabel("Gemini API key").fill("test-key");
   await page.getByRole("button", { name: "Save key" }).click();
@@ -268,6 +351,9 @@ test("study reviewer supports 3-stage width, simultaneous text+video selection, 
   await expect(fullScreenButton).toBeVisible();
   await fullScreenButton.click();
   await expect(page.getByRole("button", { name: "50% view" })).toBeVisible();
+  await expect(
+    page.evaluate(() => document.documentElement.dataset.reviewerStage),
+  ).resolves.toBe("full");
   await expect
     .poll(async () => {
       const bounds = await dock.boundingBox();

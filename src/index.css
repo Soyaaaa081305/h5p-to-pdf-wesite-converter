@@ -40,6 +40,26 @@ body {
   background: #faf7ef;
 }
 
+@media (min-width: 640px) {
+  html[data-reviewer-stage="half"] {
+    overflow: hidden;
+  }
+  html[data-reviewer-stage="half"] body {
+    overflow: hidden;
+    height: 100dvh;
+  }
+  html[data-reviewer-stage="half"] .app-main-layout {
+    width: 50vw;
+    max-width: 50vw;
+    height: calc(100dvh - 3.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  html[data-reviewer-stage="half"] .app-main-layout > * {
+    max-width: 100%;
+  }
+}
+
 button,
 a {
   font: inherit;

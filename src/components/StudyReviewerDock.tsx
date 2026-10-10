@@ -8,6 +8,8 @@ interface Props {
   title: string;
   sourceText: string;
   pdfFile?: File;
+  getPdfFile?: () => Promise<File>;
+  sourcePdfLabel?: string;
   youtubeUrl?: string;
   youtubeUrls?: string[];
   onTranscriptReady?: (transcript: GeneratedTranscript) => void;
@@ -17,12 +19,31 @@ export function StudyReviewerDock({
   title,
   sourceText,
   pdfFile,
+  getPdfFile,
+  sourcePdfLabel,
   youtubeUrl,
   youtubeUrls,
   onTranscriptReady,
 }: Props) {
   const [stage, setStage] = useState<ReviewerStage>("closed");
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (stage === "half") {
+        document.documentElement.dataset.reviewerStage = "half";
+      } else if (stage === "full") {
+        document.documentElement.dataset.reviewerStage = "full";
+      } else {
+        delete document.documentElement.dataset.reviewerStage;
+      }
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        delete document.documentElement.dataset.reviewerStage;
+      }
+    };
+  }, [stage]);
 
   const stepUp = () => {
     setStage((current) => {
@@ -217,6 +238,8 @@ export function StudyReviewerDock({
             title={title}
             sourceText={sourceText}
             pdfFile={pdfFile}
+            getPdfFile={getPdfFile}
+            sourcePdfLabel={sourcePdfLabel}
             youtubeUrl={youtubeUrl}
             youtubeUrls={youtubeUrls}
             stage={stage}

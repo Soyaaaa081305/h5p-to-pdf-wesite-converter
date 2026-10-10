@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import type { H5PPackage } from "../types/h5p";
 import { ElementDispatcher } from "./renderers/ElementDispatcher";
 import { StudyReviewerDock } from "./StudyReviewerDock";
@@ -6,6 +7,7 @@ import {
   extractH5PYouTubeUrls,
 } from "../lib/studyMaterials";
 import type { GeneratedTranscript } from "../types/study";
+
 export function DocumentViewer({
   pkg,
   onTranscriptReady,
@@ -29,6 +31,45 @@ export function DocumentViewer({
     .filter(Boolean)
     .join("\n\n");
   const youtubeUrls = extractH5PYouTubeUrls(pkg.content);
+
+  const presentationNodes = pkg.report.nodes.filter(
+    (n) => n.library === "H5P.CoursePresentation",
+  );
+  const slideCount = presentationNodes.reduce(
+    (total, node) =>
+      total +
+      (Array.isArray(node.params.presentation?.slides)
+        ? node.params.presentation.slides.length
+        : 0),
+    0,
+  );
+
+  const [pdfFile, setPdfFile] = useState<File>();
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    import("../lib/pdfExporter")
+      .then((mod) => mod.exportPackageToPdfFile(pkg, controller.signal))
+      .then((file) => {
+        if (active) setPdfFile(file);
+      })
+      .catch(() => {
+        // Aborted or generation failed
+      });
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [pkg]);
+
+  const getPdfFile = useCallback(async () => {
+    if (pdfFile) return pdfFile;
+    const mod = await import("../lib/pdfExporter");
+    const file = await mod.exportPackageToPdfFile(pkg);
+    setPdfFile(file);
+    return file;
+  }, [pkg, pdfFile]);
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 print:p-0">
@@ -68,6 +109,11 @@ export function DocumentViewer({
       <StudyReviewerDock
         title={title}
         sourceText={sourceText}
+        pdfFile={pdfFile}
+        getPdfFile={getPdfFile}
+        sourcePdfLabel={
+          slideCount > 0 ? `Course PDF (${slideCount} slides)` : "Course PDF"
+        }
         youtubeUrls={youtubeUrls}
         onTranscriptReady={onTranscriptReady}
       />

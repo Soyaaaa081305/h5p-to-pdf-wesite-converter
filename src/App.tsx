@@ -199,7 +199,7 @@ function StudyReviewerApp() {
       {policyPage ? (
         <PolicyPage page={policyPage} />
       ) : (
-        <main className="flex flex-1 flex-col">
+        <main className="app-main-layout flex flex-1 flex-col">
           {loading && (
             <div role="status" className="p-3 text-center text-sm">
               {loading}{" "}

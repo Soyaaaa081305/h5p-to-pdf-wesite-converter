@@ -33,6 +33,8 @@ interface Props {
   title: string;
   sourceText: string;
   pdfFile?: File;
+  getPdfFile?: () => Promise<File>;
+  sourcePdfLabel?: string;
   youtubeUrl?: string;
   youtubeUrls?: string[];
   compact?: boolean;
@@ -188,6 +190,8 @@ export function StudyReviewer({
   title,
   sourceText,
   pdfFile,
+  getPdfFile,
+  sourcePdfLabel,
   youtubeUrl,
   youtubeUrls = [],
   compact = false,
@@ -210,10 +214,14 @@ export function StudyReviewer({
   >("standard");
   const [customPrompt, setCustomPrompt] = useState("");
 
-  const hasCourseText = Boolean(sourceText.trim()) || Boolean(pdfFile);
+  const hasCourseText =
+    Boolean(sourceText.trim()) || Boolean(pdfFile) || Boolean(getPdfFile);
   const [includeCourseText, setIncludeCourseText] = useState(true);
   const [selectedYoutubeUrls, setSelectedYoutubeUrls] = useState<string[]>([]);
   const [review, setReview] = useState<StudyReview>();
+  const [activeReviewSection, setActiveReviewSection] = useState<
+    "all" | "summary" | "ideas" | "terms" | "questions"
+  >("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -229,6 +237,15 @@ export function StudyReviewer({
     setMessage("");
     setLoading(true);
     try {
+      let resolvedPdf = pdfFile;
+      if (!resolvedPdf && getPdfFile && includeCourseText) {
+        try {
+          resolvedPdf = await getPdfFile();
+        } catch {
+          // If PDF generation fails, continue with text
+        }
+      }
+
       const next = await generateStudyReview({
         apiKey,
         title,
@@ -237,9 +254,10 @@ export function StudyReviewer({
         difficulty,
         youtubeUrls: selectedYoutubeUrls,
         customPrompt: customPrompt.trim() ? customPrompt.trim() : undefined,
-        pdfFile: includeCourseText ? pdfFile : undefined,
+        pdfFile: includeCourseText ? resolvedPdf : undefined,
       });
       setReview(next);
+      setActiveReviewSection("all");
       setAnswersVisible(true);
     } catch (e) {
       setError(friendlyError(e));
@@ -485,7 +503,7 @@ export function StudyReviewer({
           </div>
         </div>
 
-        <div className="no-print mt-5">
+        <div className="no-print mt-5 max-w-xl">
           <label
             htmlFor="gemini-api-key"
             className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300"
@@ -493,7 +511,7 @@ export function StudyReviewer({
             Gemini API key
           </label>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[200px] flex-1">
+            <div className="relative min-w-[200px] flex-1 max-w-sm sm:max-w-md">
               <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
               <input
                 id="gemini-api-key"
@@ -573,7 +591,7 @@ export function StudyReviewer({
           </div>
         </div>
 
-        <div className="no-print mt-4 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="no-print mt-4 flex max-w-2xl flex-wrap items-center justify-between gap-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={questionCount}
@@ -619,7 +637,7 @@ export function StudyReviewer({
           </button>
         </div>
 
-        <details className="group no-print mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+        <details className="group no-print mt-3 max-w-2xl text-xs text-zinc-600 dark:text-zinc-400">
           <summary className="flex cursor-pointer select-none items-center gap-1.5 font-medium hover:text-zinc-900 dark:hover:text-zinc-100">
             <SlidersHorizontal className="h-3.5 w-3.5 text-zinc-400 transition-colors group-open:text-indigo-600 dark:group-open:text-indigo-400" />
             <span>Custom prompt & instructions (optional)</span>
@@ -672,7 +690,11 @@ export function StudyReviewer({
                       : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
                   }`}
                 >
-                  {pdfFile ? "Lesson PDF / text" : "Lesson text"}
+                  {sourcePdfLabel
+                    ? `${sourcePdfLabel} / Lesson text`
+                    : pdfFile || getPdfFile
+                      ? "Lesson PDF / text"
+                      : "Lesson text"}
                 </button>
               )}
               {videoSources.map((url, index) => {
@@ -732,114 +754,192 @@ export function StudyReviewer({
 
       {review ? (
         <div className="space-y-8 px-5 py-6 sm:px-7 sm:py-8">
-          <article>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
+          <div className="no-print -mt-2 flex flex-wrap items-center gap-1.5 border-b border-zinc-200/80 pb-3 dark:border-zinc-800/80">
+            <span className="mr-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+              View:
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveReviewSection("all")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                activeReviewSection === "all"
+                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              }`}
+            >
+              All sections
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveReviewSection("summary")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                activeReviewSection === "summary"
+                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              }`}
+            >
               Study summary
-            </p>
-            <h3 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              {review.title}
-            </h3>
-            <p className="mt-3 max-w-4xl text-sm leading-7 text-zinc-700 dark:text-zinc-300">
-              {review.summary}
-            </p>
-          </article>
+            </button>
+            {review.keyPoints.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveReviewSection("ideas")}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  activeReviewSection === "ideas"
+                    ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                }`}
+              >
+                Key ideas ({review.keyPoints.length})
+              </button>
+            )}
+            {review.terms.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveReviewSection("terms")}
+                className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                  activeReviewSection === "terms"
+                    ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                    : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                }`}
+              >
+                Key terms ({review.terms.length})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setActiveReviewSection("questions")}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition ${
+                activeReviewSection === "questions"
+                  ? "bg-indigo-600 text-white shadow-xs dark:bg-indigo-500"
+                  : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              }`}
+            >
+              Questions ({review.questions.length})
+            </button>
+          </div>
 
-          {review.keyPoints.length > 0 && (
-            <section>
-              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Key ideas
+          {(activeReviewSection === "all" ||
+            activeReviewSection === "summary") && (
+            <article>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-600 dark:text-indigo-300">
+                Study summary
+              </p>
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                {review.title}
               </h3>
-              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-                {review.keyPoints.map((point, index) => (
-                  <li
-                    key={`${index}-${point.slice(0, 24)}`}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
-                  >
-                    <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-300">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    {point}
-                  </li>
-                ))}
-              </ul>
-            </section>
+              <div className="mt-3 max-w-4xl space-y-3 text-sm leading-7 text-zinc-700 dark:text-zinc-300">
+                {review.summary
+                  .split(/\n\n+/)
+                  .filter((p) => p.trim())
+                  .map((para, i) => (
+                    <p key={i}>{para}</p>
+                  ))}
+              </div>
+            </article>
           )}
 
-          {review.terms.length > 0 && (
+          {(activeReviewSection === "all" || activeReviewSection === "ideas") &&
+            review.keyPoints.length > 0 && (
+              <section>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Key ideas
+                </h3>
+                <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {review.keyPoints.map((point, index) => (
+                    <li
+                      key={`${index}-${point.slice(0, 24)}`}
+                      className="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-300"
+                    >
+                      <span className="mr-2 font-bold text-indigo-600 dark:text-indigo-300">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+          {(activeReviewSection === "all" || activeReviewSection === "terms") &&
+            review.terms.length > 0 && (
+              <section>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Key terms
+                </h3>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {review.terms.map((term, index) => (
+                    <article
+                      key={`${index}-${term.term}`}
+                      className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800"
+                    >
+                      <h4 className="font-bold text-zinc-900 dark:text-zinc-100">
+                        {term.term}
+                      </h4>
+                      <p className="mt-1.5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                        {term.definition}
+                      </p>
+                      <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+                        {term.source}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
+          {(activeReviewSection === "all" ||
+            activeReviewSection === "questions") && (
             <section>
               <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                Key terms
+                Practice questions
               </h3>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {review.terms.map((term, index) => (
+              <div className="mt-3 space-y-3">
+                {review.questions.map((item, index) => (
                   <article
-                    key={`${index}-${term.term}`}
-                    className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800"
+                    key={`${index}-${item.question.slice(0, 28)}`}
+                    className="break-inside-avoid rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
                   >
-                    <h4 className="font-bold text-zinc-900 dark:text-zinc-100">
-                      {term.term}
-                    </h4>
-                    <p className="mt-1.5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                      {term.definition}
-                    </p>
-                    <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
-                      {term.source}
-                    </p>
+                    <div className="flex gap-3">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
+                          {item.question}
+                        </p>
+                        {item.options.length > 0 && (
+                          <ol className="mt-2 list-[upper-alpha] space-y-1 pl-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                            {item.options.map((option, optionIndex) => (
+                              <li key={`${optionIndex}-${option.slice(0, 20)}`}>
+                                {option}
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                        {answersVisible && (
+                          <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+                            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                              Answer:{" "}
+                              <span className="font-normal">{item.answer}</span>
+                            </p>
+                            {item.explanation && (
+                              <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                                {item.explanation}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
+                          Source: {item.source}
+                        </p>
+                      </div>
+                    </div>
                   </article>
                 ))}
               </div>
             </section>
           )}
-
-          <section>
-            <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-              Practice questions
-            </h3>
-            <div className="mt-3 space-y-3">
-              {review.questions.map((item, index) => (
-                <article
-                  key={`${index}-${item.question.slice(0, 28)}`}
-                  className="break-inside-avoid rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 dark:border-zinc-800 dark:bg-zinc-900"
-                >
-                  <div className="flex gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-xs font-bold text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold leading-6 text-zinc-900 dark:text-zinc-100">
-                        {item.question}
-                      </p>
-                      {item.options.length > 0 && (
-                        <ol className="mt-2 list-[upper-alpha] space-y-1 pl-5 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                          {item.options.map((option, optionIndex) => (
-                            <li key={`${optionIndex}-${option.slice(0, 20)}`}>
-                              {option}
-                            </li>
-                          ))}
-                        </ol>
-                      )}
-                      {answersVisible && (
-                        <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                            Answer:{" "}
-                            <span className="font-normal">{item.answer}</span>
-                          </p>
-                          {item.explanation && (
-                            <p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
-                              {item.explanation}
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      <p className="mt-2 text-[11px] font-medium text-indigo-700 dark:text-indigo-300">
-                        Source: {item.source}
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
           <p className="border-t border-zinc-200 pt-3 text-[11px] text-zinc-400 dark:border-zinc-800">
             AI-generated study aid. Verify important facts with course material.
           </p>

@@ -187,6 +187,21 @@ export function extractH5PLearningText(
       if (!textFields.has(item.key)) continue;
       const text = plainText(item.value).replace(/\s+/g, " ").trim();
       if (text.length < 3 || seen.has(text)) continue;
+      const lower = text.toLowerCase();
+      if (
+        lower.includes("@score") ||
+        lower.includes("@maxscore") ||
+        lower.includes("@total") ||
+        lower.includes("@currentpageurl") ||
+        /^untitled (?:drag the words|fill in the blanks|coursepresentation|single choice set|question set|summary|interactive video|multichoice|true\/false)/i.test(
+          lower,
+        ) ||
+        /^(?:drag the words|fill in the blanks|retry|show solution|check)$/i.test(
+          lower,
+        )
+      ) {
+        continue;
+      }
       seen.add(text);
       chunks.push(text);
     } else if (Array.isArray(item.value)) {
